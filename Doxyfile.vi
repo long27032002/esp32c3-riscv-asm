@@ -1,0 +1,23 @@
+# Doxygen configuration for the ESP32-C3 assembly template - VIETNAMESE.
+#
+# Includes the English Doxyfile and overrides only what differs, so shared
+# settings live in exactly one file.
+#
+# Build both languages at once:  ./tools/build-docs.sh
+# Build this one alone:          doxygen Doxyfile.vi
+# Output:                        docs/html/vi/index.html
+
+@INCLUDE = Doxyfile
+
+PROJECT_BRIEF          = "Hợp ngữ RISC-V trên ESP32-C3, có tài liệu đầy đủ"
+
+# Doxygen translates its own chrome - section headings, table captions,
+# navigation - but NOT the content of the source comments, which stay English
+# by project convention. Doxygen also warns that the Vietnamese translation
+# has not been updated since release 1.6.0, so some strings remain English.
+# tools/build-docs.sh filters that one known notice; every other warning is
+# still treated as a failure.
+OUTPUT_LANGUAGE        = Vietnamese
+
+USE_MDFILE_AS_MAINPAGE = README.md
+HTML_OUTPUT            = html/vi

@@ -27,7 +27,8 @@ bằng tiếng Việt.
 | `tools/check-release.sh` | Quét đường dẫn máy, số serial, khoá — chạy trước khi public |
 | `.gitattributes` | Khoá kết thúc dòng: `.sh` luôn LF, `.bat`/`.ps1` luôn CRLF |
 | `.vscode/` | Do script sinh ra: build, flash, debug, panel MEMORY và xRTOS |
-| `Doxyfile` | Sinh tài liệu HTML từ chú thích, **đọc được cả file `.S`** |
+| `Doxyfile` + `Doxyfile.vi` | Sinh tài liệu HTML hai thứ tiếng, **đọc được cả file `.S`** |
+| `tools/build-docs.sh` | Dựng cả hai bản và trang chọn ngôn ngữ |
 
 Chương trình mẫu khi chạy sẽ:
 
@@ -188,7 +189,7 @@ code .          # mở ĐÚNG thư mục này, không mở thư mục cha
 | Build | `Ctrl+Shift+B` |
 | Nạp + xem console | Terminal → Run Task → **flash + monitor** |
 | Debug | **F5** (dừng sẵn ở nhãn `sum_loop`) |
-| Sinh tài liệu | Terminal → Run Task → **docs (doxygen)** |
+| Sinh tài liệu | Terminal → Run Task → **docs (doxygen, en + vi)** |
 
 Không dùng VS Code:
 

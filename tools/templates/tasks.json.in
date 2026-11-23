@@ -94,9 +94,9 @@
             "presentation": { "panel": "shared", "reveal": "always" }
         },
         {
-            "label": "docs (doxygen)",
+            "label": "docs (doxygen, en + vi)",
             "type": "shell",
-            "command": "doxygen Doxyfile && echo 'open docs/html/index.html'",
+            "command": "./tools/build-docs.sh && echo 'open docs/html/index.html'",
             "problemMatcher": [],
             "presentation": { "panel": "shared", "reveal": "always" }
         }
