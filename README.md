@@ -20,6 +20,7 @@ bằng tiếng Việt.
 | `main/main.c` | Gọi thử, tự kiểm tra kết quả, tạo 3 task FreeRTOS |
 | `tools/setup.sh` | Cài đặt và cấu hình tự động cho Linux / macOS |
 | `tools/setup.bat` + `setup.ps1` | Bản tương ứng cho Windows |
+| `tools/recover-jtag.sh` | Gỡ JTAG bị kẹt, tự dò python ESP-IDF và cổng serial |
 | `.vscode/` | Do script sinh ra: build, flash, debug, panel MEMORY và xRTOS |
 | `Doxyfile` | Sinh tài liệu HTML từ chú thích, **đọc được cả file `.S`** |
 
@@ -94,6 +95,26 @@ toolchain, GDB và OpenOCD. Script nạp `export.sh` trong một shell con rồi
 `command -v`, nên luôn lấy đúng bộ công cụ của chính bản ESP-IDF đang dùng.
 
 ---
+
+## Những thứ không bao giờ nằm trong repo
+
+Ba thứ sau **chỉ tồn tại trên máy bạn**, `.gitignore` đã loại hẳn. Người clone
+về sẽ không có chúng, và tự sinh ra khi chạy script hoặc build:
+
+| Mục | Vì sao không commit | Ai tạo ra |
+|---|---|---|
+| `build/` | Kết quả biên dịch, nhúng đường dẫn tuyệt đối của máy build | `idf.py build` |
+| `sdkconfig` | Cấu hình đã nở ra từ `sdkconfig.defaults`, ghim đường dẫn toolchain | lần build đầu |
+| `.vscode/settings.json`, `launch.json`, `tasks.json` | Chứa đường dẫn tuyệt đối và **số serial của một board cụ thể** | `tools/setup.sh` |
+
+Chỉ `sdkconfig.defaults` được commit — đó mới là file nguồn.
+
+Muốn tự kiểm tra trước khi đẩy lên:
+
+```bash
+git ls-files                     # đúng những file sẽ công khai
+git grep -n "/home/\|C:\\Users"   # không được ra kết quả nào
+```
 
 ## Dùng hằng ngày
 
@@ -185,14 +206,13 @@ Terminal → Run Task → **recover JTAG (watchdog reset)**
 hoặc:
 
 ```bash
-pkill -x openocd
-~/.espressif/python_env/idf5.3_py3.14_env/bin/python -m esptool \
-    --chip esp32c3 -p "$(ls /dev/serial/by-id/usb-Espressif*)" \
-    --after watchdog_reset flash_id
+./tools/recover-jtag.sh
 ```
 
-`python` của hệ thống **không có** module `esptool`; phải dùng python của
-ESP-IDF như trên.
+Script tự tìm python của ESP-IDF và cổng serial, không cần nạp môi trường
+trước. Lưu ý `python` của hệ thống **không có** module `esptool`, và tên thư
+mục python env (`idf5.3_py3.14_env`...) khác nhau theo từng máy — đó là lý do
+script phải dò chứ không ghi cứng đường dẫn.
 
 ### "couldn't bind ... port 6666: Address already in use"
 
