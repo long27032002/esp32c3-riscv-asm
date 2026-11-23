@@ -61,11 +61,17 @@ jobs:
         run: |
           . "${IDF_PATH}/export.sh" >/dev/null
           elf=build/esp32c3_asm_template.elf
+          # Read the symbol table once, then match against a here-string.
+          # "nm | grep -q" looks natural but breaks under "set -o pipefail",
+          # which GitHub sets for every bash step: grep -q exits at the first
+          # match, closing the pipe, so nm dies of SIGPIPE (141) and the
+          # pipeline is reported as failed even though the symbol was found.
+          syms="$(riscv32-esp-elf-nm "${elf}")"
           missing=0
           for sym in asm_sum_loop asm_sum_closed_form asm_fill_table \
                      asm_gpio_output_init asm_read_misa g_result_table sum_loop
           do
-            if riscv32-esp-elf-nm "${elf}" | grep -qw "${sym}"; then
+            if grep -qw -- "${sym}" <<< "${syms}"; then
               echo "  ok      ${sym}"
             else
               echo "  MISSING ${sym}"
@@ -234,6 +240,9 @@ jobs:
           } else {
               Write-Host "  note unexpected output, inspect the log above"
           }
+          # setup.ps1 exiting non-zero is the expected outcome here, but a pwsh
+          # step inherits $LASTEXITCODE and would mark itself failed. Clear it.
+          exit 0
 
       - name: Batch files must be CRLF
         shell: pwsh
