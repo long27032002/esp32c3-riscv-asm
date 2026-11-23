@@ -18,7 +18,7 @@
  *        number or width of parameters produces no compiler error, only
  *        garbage at run time.
  *
- * @author  Your Name
+ * @author  Nguyen Nhu Hai Long
  * @date    2026-11-24
  * @copyright SPDX-License-Identifier: MIT
  */

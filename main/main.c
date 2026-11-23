@@ -7,7 +7,7 @@
  * results and provides the FreeRTOS tasks that make the debugger views
  * (Call Stack, xRTOS, MEMORY) worth looking at.
  *
- * @author  Your Name
+ * @author  Nguyen Nhu Hai Long
  * @date    2026-11-24
  * @copyright SPDX-License-Identifier: MIT
  */

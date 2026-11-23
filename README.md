@@ -21,6 +21,8 @@ bằng tiếng Việt.
 | `tools/setup.sh` | Cài đặt và cấu hình tự động cho Linux / macOS |
 | `tools/setup.bat` + `setup.ps1` | Bản tương ứng cho Windows |
 | `tools/recover-jtag.sh` | Gỡ JTAG bị kẹt, tự dò python ESP-IDF và cổng serial |
+| `tools/recover-jtag.ps1` | Bản Windows của recover-jtag |
+| `tools/check-release.sh` | Quét đường dẫn máy, số serial, khoá — chạy trước khi public |
 | `.vscode/` | Do script sinh ra: build, flash, debug, panel MEMORY và xRTOS |
 | `Doxyfile` | Sinh tài liệu HTML từ chú thích, **đọc được cả file `.S`** |
 
@@ -107,14 +109,32 @@ về sẽ không có chúng, và tự sinh ra khi chạy script hoặc build:
 | `sdkconfig` | Cấu hình đã nở ra từ `sdkconfig.defaults`, ghim đường dẫn toolchain | lần build đầu |
 | `.vscode/settings.json`, `launch.json`, `tasks.json` | Chứa đường dẫn tuyệt đối và **số serial của một board cụ thể** | `tools/setup.sh` |
 
-Chỉ `sdkconfig.defaults` được commit — đó mới là file nguồn.
+Chỉ `sdkconfig.defaults` và `.vscode/extensions.json` được commit — file thứ
+hai chỉ chứa **mã định danh extension**, không có đường dẫn nào, nên VS Code sẽ
+tự mời cài 4 extension cần thiết khi người ta mở thư mục lần đầu.
 
-Muốn tự kiểm tra trước khi đẩy lên:
+### Vì sao `.vscode/settings.json` phải ghi đường dẫn tuyệt đối
+
+Không có cách nào khác. ESP-IDF Extension đọc các giá trị `idf.*` **nguyên
+văn** — nó không hiểu `${env:HOME}` hay bất cứ biến nào (đã kiểm chứng bằng
+cách tìm trong mã nguồn extension: không có chỗ nào xử lý). Thêm nữa, tên thư
+mục công cụ còn mã hoá phiên bản (`16.3_20250913`,
+`v0.12.0-esp32-20251215`), khác nhau theo từng máy kể cả khi cùng hệ điều hành.
+
+Nên lời giải không phải là viết cho "đẹp" mà là **sinh lại trên từng máy**:
+`setup.sh` tạo file, `.gitignore` chặn không cho commit.
+
+### Tự kiểm tra trước khi công bố
 
 ```bash
-git ls-files                     # đúng những file sẽ công khai
-git grep -n "/home/\|C:\\Users"   # không được ra kết quả nào
+./tools/check-release.sh
 ```
+
+Script kiểm 5 nhóm: file sinh ra bị track, đường dẫn `/home/...` hoặc
+`C:\Users\...`, python env ghi cứng, số serial của board, và khoá/token.
+`setup.sh` cũng cài sẵn **git hook `pre-commit`** gọi script này, nên một lần
+`git add -f` lỡ tay sẽ bị chặn ngay. Muốn bỏ qua một lần:
+`git commit --no-verify`.
 
 ## Dùng hằng ngày
 

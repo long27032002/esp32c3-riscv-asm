@@ -321,7 +321,33 @@ sys.exit(1 if bad else 0)
 PY
 fi
 
-# ----------------------------------------------------------- 8. summary -----
+# --------------------------------------------- 8. guard against leaking -----
+# The generated .vscode files contain absolute paths and one board's serial
+# number. .gitignore keeps them out of the repository, but a hurried
+# "git add -f" would defeat that, so install a pre-commit hook as a second
+# line of defence. Never overwrite a hook the user already has.
+step "Installing the pre-commit guard"
+HOOK_DIR="${PROJECT_DIR}/.git/hooks"
+if [ ! -d "${PROJECT_DIR}/.git" ]; then
+    info "not a git repository, skipping"
+elif [ "${MODE}" = "check" ]; then
+    info "check mode: skipping"
+elif [ -e "${HOOK_DIR}/pre-commit" ]; then
+    warn "a pre-commit hook already exists, leaving it alone"
+    info "run ./tools/check-release.sh --staged by hand before publishing"
+else
+    mkdir -p "${HOOK_DIR}"
+    cat > "${HOOK_DIR}/pre-commit" <<'HOOK'
+#!/bin/sh
+# Installed by tools/setup.sh. Blocks commits that would leak machine-specific
+# paths or a board serial number. Bypass once with: git commit --no-verify
+exec "$(git rev-parse --show-toplevel)/tools/check-release.sh" --staged
+HOOK
+    chmod +x "${HOOK_DIR}/pre-commit"
+    ok "pre-commit hook installed (bypass once with git commit --no-verify)"
+fi
+
+# ----------------------------------------------------------- 9. summary -----
 step "Done"
 cat <<EOF
     Next steps:

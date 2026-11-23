@@ -1,0 +1,10 @@
+{
+    // Safe to commit: contains no paths, only extension identifiers.
+    // VS Code offers to install these when the folder is opened.
+    "recommendations": [
+        "espressif.esp-idf-extension",
+        "ms-vscode.cpptools",
+        "mcu-debug.memory-view",
+        "mcu-debug.rtos-views"
+    ]
+}

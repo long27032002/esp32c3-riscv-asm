@@ -29,7 +29,7 @@
  * - `components/soc/esp32c3/include/soc/io_mux_reg.h`
  * - `components/soc/esp32c3/include/soc/gpio_sig_map.h`
  *
- * @author  Your Name
+ * @author  Nguyen Nhu Hai Long
  * @date    2026-11-24
  * @copyright SPDX-License-Identifier: MIT
  */
