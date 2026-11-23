@@ -1,0 +1,39 @@
+# Normalise line endings so the template survives a round trip through
+# Windows. Git for Windows installs with core.autocrlf=true by default, which
+# would convert these files to CRLF on checkout.
+#
+# A shell script with CRLF line endings fails in a way that looks unrelated to
+# line endings at all:
+#     env: 'bash\r': No such file or directory
+# because the kernel reads "bash\r" as the interpreter name. The same applies
+# to a script copied from a Windows checkout into WSL or onto a Linux machine.
+
+* text=auto
+
+# Must stay LF, whatever the platform.
+*.sh        text eol=lf
+*.c         text eol=lf
+*.h         text eol=lf
+*.S         text eol=lf
+*.md        text eol=lf
+*.json      text eol=lf
+*.in        text eol=lf
+*.cmake     text eol=lf
+CMakeLists.txt  text eol=lf
+Doxyfile        text eol=lf
+.gitignore      text eol=lf
+sdkconfig.defaults text eol=lf
+
+# Must stay CRLF: cmd.exe mis-parses a .bat file that uses LF only.
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+
+# PowerShell copes with either, but CRLF is what Windows tools expect.
+*.ps1       text eol=crlf
+
+# Never touch binaries.
+*.png       binary
+*.jpg       binary
+*.pdf       binary
+*.bin       binary
+*.elf       binary

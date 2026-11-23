@@ -280,9 +280,12 @@ if ($Check) {
     $tasks = $tasks.Replace(
         "pkill -x openocd 2>/dev/null; sleep 0.5; exec ",
         "taskkill /IM openocd.exe /F 2>`$null; ")
-    $tasks = $tasks.Replace(
-        "pkill -x openocd 2>/dev/null; sleep 1; ",
-        "taskkill /IM openocd.exe /F 2>`$null; ")
+    # The recovery task shells out to recover-jtag.ps1 rather than repeating
+    # the esptool invocation, so there is one implementation to maintain.
+    $tasks = [regex]::Replace(
+        $tasks,
+        'pkill -x openocd 2>/dev/null; sleep 1; [^"]*--after watchdog_reset flash_id',
+        'powershell -NoProfile -ExecutionPolicy Bypass -File \"${workspaceFolder}/tools/recover-jtag.ps1\"')
     $tasks = $tasks.Replace(
         "pkill -x openocd && echo killed || echo 'nothing running'",
         "taskkill /IM openocd.exe /F")

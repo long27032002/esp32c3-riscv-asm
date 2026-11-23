@@ -21,8 +21,9 @@ bằng tiếng Việt.
 | `tools/setup.sh` | Cài đặt và cấu hình tự động cho Linux / macOS |
 | `tools/setup.bat` + `setup.ps1` | Bản tương ứng cho Windows |
 | `tools/recover-jtag.sh` | Gỡ JTAG bị kẹt, tự dò python ESP-IDF và cổng serial |
-| `tools/recover-jtag.ps1` | Bản Windows của recover-jtag |
+| `tools/recover-jtag.ps1` + `.bat` | Bản Windows của recover-jtag |
 | `tools/check-release.sh` | Quét đường dẫn máy, số serial, khoá — chạy trước khi public |
+| `.gitattributes` | Khoá kết thúc dòng: `.sh` luôn LF, `.bat`/`.ps1` luôn CRLF |
 | `.vscode/` | Do script sinh ra: build, flash, debug, panel MEMORY và xRTOS |
 | `Doxyfile` | Sinh tài liệu HTML từ chú thích, **đọc được cả file `.S`** |
 
@@ -242,6 +243,19 @@ Lưu ý task dùng `pkill -x openocd`, khớp theo **tên tiến trình**. Đừ
 `pkill -f <đường_dẫn>`: `-f` khớp cả dòng lệnh, mà dòng lệnh của chính shell
 đang chạy task cũng chứa đường dẫn OpenOCD, nên task sẽ tự giết shell của mình
 và chết ngay với terminal trống.
+
+### Script `.sh` báo `env: 'bash\r': No such file or directory`
+
+File bị đổi sang kết thúc dòng CRLF — thường do checkout trên Windows với
+`core.autocrlf=true` rồi copy sang Linux/WSL. Nhân hệ điều hành đọc tên trình
+thông dịch thành `bash\r` nên không tìm thấy.
+
+`.gitattributes` trong repo đã khoá `.sh` ở LF nên clone mới sẽ không gặp. Nếu
+vẫn dính (ví dụ file đến qua đường zip hay USB):
+
+```bash
+sed -i 's/\r$//' tools/*.sh
+```
 
 ### Cổng serial đổi tên sau khi reset
 
