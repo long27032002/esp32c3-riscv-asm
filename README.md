@@ -1,5 +1,7 @@
 # ESP32-C3 RISC-V Assembly Template
 
+[English](README.en.md) · **Tiếng Việt**
+
 Bộ khung để **học, nghiên cứu và phát triển** chương trình hợp ngữ RISC-V
 (RV32IMC) trên ESP32-C3, kèm script cài đặt tự động và môi trường debug đầy đủ
 trong VS Code.
@@ -50,16 +52,16 @@ Vòng lặp tốn **322 chu kỳ**, công thức tốn **16** — hơn 20 lần,
 ### Linux / macOS
 
 ```bash
-git clone <repo> esp32c3-asm-template
-cd esp32c3-asm-template
+git clone https://github.com/long27032002/esp32c3-riscv-asm.git
+cd esp32c3-riscv-asm
 ./tools/setup.sh
 ```
 
 ### Windows
 
 ```bat
-git clone <repo> esp32c3-asm-template
-cd esp32c3-asm-template
+git clone https://github.com/long27032002/esp32c3-riscv-asm.git
+cd esp32c3-riscv-asm
 tools\setup.bat
 ```
 
@@ -195,6 +197,11 @@ ESP-IDF như trên.
 ### "couldn't bind ... port 6666: Address already in use"
 
 Còn một OpenOCD cũ. Task **kill stray OpenOCD**, hoặc `pkill -x openocd`.
+
+Lưu ý task dùng `pkill -x openocd`, khớp theo **tên tiến trình**. Đừng đổi sang
+`pkill -f <đường_dẫn>`: `-f` khớp cả dòng lệnh, mà dòng lệnh của chính shell
+đang chạy task cũng chứa đường dẫn OpenOCD, nên task sẽ tự giết shell của mình
+và chết ngay với terminal trống.
 
 ### Cổng serial đổi tên sau khi reset
 

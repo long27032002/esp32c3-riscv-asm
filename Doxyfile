@@ -8,7 +8,9 @@ PROJECT_NUMBER         = 1.0.0
 OUTPUT_DIRECTORY       = docs
 OUTPUT_LANGUAGE        = English
 
-INPUT                  = main README.md
+# README.en.md is included so the language-switch link in README.md resolves;
+# without it Doxygen warns about an unresolvable \ref.
+INPUT                  = main README.md README.en.md
 USE_MDFILE_AS_MAINPAGE = README.md
 RECURSIVE              = YES
 
