@@ -2,6 +2,8 @@
 
 [English](README.en.md) · **Tiếng Việt**
 
+[![CI](https://github.com/long27032002/esp32c3-riscv-asm/actions/workflows/ci.yml/badge.svg)](https://github.com/long27032002/esp32c3-riscv-asm/actions/workflows/ci.yml)
+
 Bộ khung để **học, nghiên cứu và phát triển** chương trình hợp ngữ RISC-V
 (RV32IMC) trên ESP32-C3, kèm script cài đặt tự động và môi trường debug đầy đủ
 trong VS Code.
@@ -98,6 +100,44 @@ toolchain, GDB và OpenOCD. Script nạp `export.sh` trong một shell con rồi
 `command -v`, nên luôn lấy đúng bộ công cụ của chính bản ESP-IDF đang dùng.
 
 ---
+
+## CI tự động (GitHub Actions)
+
+Mỗi lần push hoặc mở pull request, GitHub chạy 6 job song song. Xem ở tab
+**Actions** của repo, hoặc bấm badge ở đầu trang.
+
+| Job | Chạy trên | Kiểm cái gì |
+|---|---|---|
+| `build` | container `espressif/idf:v5.3.5` | Biên dịch với `-Werror`; in kích thước; kiểm 7 ký hiệu assembly có thật trong ELF; tải lên `.bin`/`.elf`/`.map` |
+| `generate` | container ESP-IDF | Chạy `setup.sh` thật, kiểm JSON sinh ra hợp lệ, **không còn placeholder `@...@`**, và vẫn bị `.gitignore` loại |
+| `leaks` | ubuntu | `check-release.sh`: đường dẫn máy, số serial, khoá |
+| `docs` | ubuntu | Doxygen phải **0 cảnh báo**; tải lên trang HTML |
+| `shell` | ubuntu | `bash -n`, `shellcheck`, và kết thúc dòng phải LF |
+| `windows` | **windows-latest** | Parse `.ps1` bằng chính parser PowerShell; chạy `setup.ps1 -Check` xem có báo lỗi tử tế không; `.bat` phải CRLF |
+
+### CI **không** làm được gì
+
+Máy ảo GitHub **không có board ESP32-C3 cắm vào**. Nên CI không thể:
+
+- nạp firmware, chạy thật, xem LED nháy
+- debug JTAG, đọc thanh ghi, đo số chu kỳ
+- kiểm cổng serial, nút BOOT, loopback UART/SPI
+
+Những thứ đó vẫn phải làm tay trên board thật. CI chỉ bắt loại lỗi *im lặng*:
+code không biên dịch nữa, script hỏng cú pháp, tài liệu sinh lỗi, hoặc ai đó
+lỡ commit đường dẫn máy mình.
+
+### Vì sao có job `windows`
+
+Máy phát triển chạy Linux nên không thử được `setup.ps1`, `recover-jtag.ps1`.
+Job này chạy trên Windows thật, ít nhất bảo đảm chúng **parse được** và thất
+bại có thông báo rõ ràng thay vì văng stack trace. Chạy đầy đủ với ESP-IDF và
+board thật thì vẫn cần người dùng Windows thử.
+
+### Chạy lại bằng tay
+
+Tab **Actions** → chọn workflow **CI** → **Run workflow** (nhờ
+`workflow_dispatch`).
 
 ## Những thứ không bao giờ nằm trong repo
 

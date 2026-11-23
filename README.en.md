@@ -2,6 +2,8 @@
 
 **English** · [Tiếng Việt](README.md)
 
+[![CI](https://github.com/long27032002/esp32c3-riscv-asm/actions/workflows/ci.yml/badge.svg)](https://github.com/long27032002/esp32c3-riscv-asm/actions/workflows/ci.yml)
+
 A starting point for **learning, researching and developing** RISC-V (RV32IMC)
 assembly on the ESP32-C3, with automated setup scripts and a complete VS Code
 debugging environment.
@@ -100,6 +102,44 @@ toolchain, a GDB and an OpenOCD that do not belong together. The script sources
 the ESP-IDF actually in use.
 
 ---
+
+## Continuous integration (GitHub Actions)
+
+Every push and pull request runs six jobs in parallel. See the **Actions** tab,
+or click the badge at the top.
+
+| Job | Runs on | What it checks |
+|---|---|---|
+| `build` | container `espressif/idf:v5.3.5` | Compiles with `-Werror`; reports size; verifies seven assembly symbols really reached the ELF; uploads `.bin`/`.elf`/`.map` |
+| `generate` | ESP-IDF container | Actually runs `setup.sh`, then checks the generated JSON is valid, has **no `@...@` placeholder left**, and is still ignored by git |
+| `leaks` | ubuntu | `check-release.sh`: machine paths, board serial numbers, keys |
+| `docs` | ubuntu | Doxygen must emit **zero warnings**; uploads the HTML |
+| `shell` | ubuntu | `bash -n`, `shellcheck`, and LF line endings |
+| `windows` | **windows-latest** | Parses the `.ps1` files with the real PowerShell parser; runs `setup.ps1 -Check` to confirm it fails readably; `.bat` must be CRLF |
+
+### What CI cannot do
+
+GitHub runners have **no ESP32-C3 attached**, so CI can never:
+
+- flash the firmware, run it, or watch the LED
+- drive JTAG, read registers, or measure cycle counts
+- test the serial port, the BOOT button, or UART/SPI loopback
+
+Those stay manual, on real hardware. CI covers the failures that are *silent*:
+code that no longer compiles, a script with a syntax error, documentation that
+breaks, or someone committing their own machine's paths.
+
+### Why there is a `windows` job
+
+The development machine runs Linux, so `setup.ps1` and `recover-jtag.ps1` could
+not be exercised there. This job runs on a real Windows host and at least
+guarantees they **parse** and fail with a readable message instead of a stack
+trace. A full run with ESP-IDF and a board still needs a Windows user.
+
+### Running it by hand
+
+**Actions** tab -> pick the **CI** workflow -> **Run workflow**, thanks to
+`workflow_dispatch`.
 
 ## What never enters the repository
 

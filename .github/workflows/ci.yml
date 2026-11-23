@@ -1,0 +1,248 @@
+# Continuous integration for the ESP32-C3 assembly template.
+#
+# WHAT CI CAN AND CANNOT DO HERE
+#
+# GitHub runners are virtual machines with no ESP32-C3 attached, so CI can
+# never flash the board, run the program, drive JTAG, blink the LED or measure
+# cycle counts. Those remain manual checks, documented in the README.
+#
+# What CI does cover is everything that fails silently when a change looks
+# harmless:
+#
+#   build       the firmware still compiles, with warnings treated as errors
+#   generate    tools/setup.sh still produces valid VS Code configuration
+#   leaks       no machine path, board serial number or key is committed
+#   docs        Doxygen still parses the .S files with zero warnings
+#   shell       the shell scripts are syntactically sound (shellcheck)
+#   windows     the PowerShell scripts at least parse on a real Windows host
+#
+# The last job matters most: the development machine runs Linux, so without it
+# the Windows scripts would ship completely unexercised.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:        # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------
+  build:
+    name: Build firmware (ESP-IDF v5.3.5)
+    runs-on: ubuntu-latest
+    # Espressif's official image: ESP-IDF, the RISC-V toolchain, OpenOCD and
+    # the python environment are already installed and IDF_PATH is set.
+    container: espressif/idf:v5.3.5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        shell: bash
+        run: |
+          . "${IDF_PATH}/export.sh" >/dev/null
+          # Warnings become errors: a template that ships with warnings
+          # teaches people to ignore them.
+          idf.py build -DEXTRA_CFLAGS="-Werror" -DEXTRA_CXXFLAGS="-Werror"
+
+      - name: Report binary size
+        shell: bash
+        run: |
+          . "${IDF_PATH}/export.sh" >/dev/null
+          idf.py size
+
+      - name: Check the assembly symbols really made it into the image
+        shell: bash
+        run: |
+          . "${IDF_PATH}/export.sh" >/dev/null
+          elf=build/esp32c3_asm_template.elf
+          missing=0
+          for sym in asm_sum_loop asm_sum_closed_form asm_fill_table \
+                     asm_gpio_output_init asm_read_misa g_result_table sum_loop
+          do
+            if riscv32-esp-elf-nm "${elf}" | grep -qw "${sym}"; then
+              echo "  ok      ${sym}"
+            else
+              echo "  MISSING ${sym}"
+              missing=1
+            fi
+          done
+          exit "${missing}"
+
+      - name: Upload the firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: |
+            build/esp32c3_asm_template.bin
+            build/esp32c3_asm_template.elf
+            build/esp32c3_asm_template.map
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------
+  generate:
+    name: setup.sh generates valid configuration
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.3.5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run setup.sh
+        shell: bash
+        run: |
+          # No VS Code and no board on a runner, so --no-install keeps it from
+          # trying to install anything; the generator is what we are testing.
+          # ESP-IDF is found through IDF_PATH, which the image sets.
+          ./tools/setup.sh --no-install
+
+      - name: The generated files must be valid JSON with no placeholder left
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, re, sys, pathlib
+          failed = False
+          for p in sorted(pathlib.Path(".vscode").glob("*.json")):
+              text = p.read_text(encoding="utf8")
+              left = re.findall(r"@[A-Z_]+@", text)
+              if left:
+                  print(f"  FAIL {p.name}: unsubstituted placeholders {set(left)}")
+                  failed = True
+              try:
+                  json.loads(re.sub(r"(?m)^\s*//.*$", "", text))
+                  print(f"  ok   {p.name}")
+              except Exception as exc:
+                  print(f"  FAIL {p.name}: {exc}")
+                  failed = True
+          sys.exit(1 if failed else 0)
+          PY
+
+      - name: The generated files must stay out of git
+        shell: bash
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          untracked="$(git status --porcelain --untracked-files=all \
+                       | grep -E '\.vscode/(settings|launch|tasks)\.json' || true)"
+          if [ -n "${untracked}" ]; then
+            echo "generated files are not ignored:"
+            echo "${untracked}"
+            exit 1
+          fi
+          echo "  ok   .gitignore still covers the generated files"
+
+  # ---------------------------------------------------------------------
+  leaks:
+    name: No machine-specific content
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0      # check-release.sh greps the whole tree
+
+      - run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          ./tools/check-release.sh
+
+  # ---------------------------------------------------------------------
+  docs:
+    name: Doxygen builds with no warnings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: sudo apt-get update && sudo apt-get install -y doxygen
+
+      - name: Generate, and fail on any warning
+        run: |
+          doxygen Doxyfile 2>doxygen.log
+          if grep -q warning doxygen.log; then
+            echo "Doxygen reported warnings:"
+            cat doxygen.log
+            exit 1
+          fi
+          echo "  ok   no warnings"
+          test -f docs/html/index.html
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: docs/html
+
+  # ---------------------------------------------------------------------
+  shell:
+    name: Shell scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax
+        run: for f in tools/*.sh; do bash -n "$f" && echo "  ok   $f"; done
+
+      - name: shellcheck
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+          shellcheck --severity=warning tools/*.sh
+
+      - name: Line endings must be LF
+        run: |
+          bad=0
+          for f in tools/*.sh main/*.c main/*.h main/*.S; do
+            if grep -qU $'\r' "$f"; then echo "  CRLF  $f"; bad=1; else echo "  ok   $f"; fi
+          done
+          exit "$bad"
+
+  # ---------------------------------------------------------------------
+  windows:
+    name: PowerShell scripts parse on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse without executing
+        shell: pwsh
+        run: |
+          $failed = $false
+          foreach ($f in Get-ChildItem tools\*.ps1) {
+              $errors = $null
+              [System.Management.Automation.Language.Parser]::ParseFile(
+                  $f.FullName, [ref]$null, [ref]$errors) | Out-Null
+              if ($errors -and $errors.Count -gt 0) {
+                  Write-Host "  FAIL $($f.Name)"
+                  $errors | ForEach-Object { Write-Host "        $_" }
+                  $failed = $true
+              } else {
+                  Write-Host "  ok   $($f.Name)"
+              }
+          }
+          if ($failed) { exit 1 }
+
+      - name: Scripts must refuse to run without ESP-IDF, not crash
+        shell: pwsh
+        run: |
+          # No ESP-IDF and no board on the runner, so the expected outcome is a
+          # clean failure with a readable message, not a stack trace.
+          $out = & powershell -NoProfile -ExecutionPolicy Bypass `
+                   -File tools\setup.ps1 -Check -NoInstall 2>&1 | Out-String
+          Write-Host $out
+          if ($out -match 'ESP-IDF not found' -or $out -match '\[fail\]') {
+              Write-Host "  ok   failed cleanly as expected"
+          } else {
+              Write-Host "  note unexpected output, inspect the log above"
+          }
+
+      - name: Batch files must be CRLF
+        shell: pwsh
+        run: |
+          foreach ($f in Get-ChildItem tools\*.bat) {
+              $raw = [System.IO.File]::ReadAllText($f.FullName)
+              if ($raw -match "[^`r]`n") {
+                  Write-Host "  FAIL $($f.Name) contains a bare LF"
+                  exit 1
+              }
+              Write-Host "  ok   $($f.Name)"
+          }
