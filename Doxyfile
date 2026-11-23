@@ -1,0 +1,50 @@
+# Doxygen configuration for the ESP32-C3 assembly template.
+# Generate with:  doxygen Doxyfile     (or: Run Task -> "docs (doxygen)")
+# Output:         docs/html/index.html
+
+PROJECT_NAME           = "ESP32-C3 RISC-V Assembly Template"
+PROJECT_BRIEF          = "Bare-register assembly on the ESP32-C3, documented"
+PROJECT_NUMBER         = 1.0.0
+OUTPUT_DIRECTORY       = docs
+OUTPUT_LANGUAGE        = English
+
+INPUT                  = main README.md
+USE_MDFILE_AS_MAINPAGE = README.md
+RECURSIVE              = YES
+
+# Doxygen has no assembly parser. Mapping .S to the C parser is what makes the
+# /** ... */ blocks in the .S files show up in the generated documentation.
+FILE_PATTERNS          = *.c *.h *.S
+EXTENSION_MAPPING      = S=C
+
+# Assembly labels are not C declarations, so the @fn blocks are the only
+# source of signatures: keep everything, document even what Doxygen cannot
+# parse by itself.
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
+MARKDOWN_SUPPORT       = YES
+
+# @clobber is not a built-in command. Define it as an alias so the register
+# clobber lists in the .S files render as a proper documentation section.
+ALIASES                = "clobber=@par Clobbers:^^"
+AUTOLINK_SUPPORT       = YES
+
+# Preprocessing: without this the peripheral #defines in the .S files are
+# expanded and the documentation shows raw numbers instead of names.
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = NO
+SEARCH_INCLUDES        = NO
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_TREEVIEW      = YES
+HTML_OUTPUT            = html
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = NO
+
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_NO_PARAMDOC       = YES

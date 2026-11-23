@@ -1,0 +1,13 @@
+CONFIG_IDF_TARGET="esp32c3"
+
+# -Og keeps generated code close to the source, which makes single-stepping
+# and the Disassembly view readable.
+CONFIG_COMPILER_OPTIMIZATION_DEBUG=y
+
+# Console over the built-in USB-Serial-JTAG: one USB-C cable carries flashing,
+# the console and JTAG. Comment out for boards with a CP210x/CH34x bridge.
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# Required by vTaskList() in task_monitor().
+CONFIG_FREERTOS_USE_TRACE_FACILITY=y
+CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS=y
