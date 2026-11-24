@@ -2,14 +2,19 @@
 #
 # WHAT CI CAN AND CANNOT DO HERE
 #
-# GitHub runners are virtual machines with no ESP32-C3 attached, so CI can
-# never flash the board, run the program, drive JTAG, blink the LED or measure
-# cycle counts. Those remain manual checks, documented in the README.
+# GitHub runners have no ESP32-C3 attached, so CI can never flash the board,
+# drive JTAG, blink the LED or measure real cycle counts. Those remain manual
+# checks, documented in the README.
+#
+# The program itself does run, though: the qemu job emulates the chip and
+# checks the output, so a change that breaks the arithmetic or stops the
+# tasks from starting fails here rather than on someone's desk.
 #
 # What CI does cover is everything that fails silently when a change looks
 # harmless:
 #
 #   build       every example still compiles, with warnings treated as errors
+#   qemu        the firmware actually runs, and prints the right answers
 #   component   the component packs cleanly for the ESP Component Registry
 #   generate    tools/setup.sh still produces valid VS Code configuration
 #   leaks       no machine path, board serial number or key is committed
@@ -99,6 +104,78 @@ jobs:
             examples/hello_asm/build/hello_asm.elf
             examples/hello_asm/build/hello_asm.map
           if-no-files-found: error
+
+  # ---------------------------------------------------------------------
+  qemu:
+    name: Run the example on QEMU
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.3.5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Espressif's QEMU links against libslirp, which the image does not
+      # carry. Without it the binary unpacks and then fails to start with
+      # "libslirp.so.0: cannot open shared object file".
+      - name: Dependencies
+        shell: bash
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq libslirp0
+
+      - name: Install the emulator
+        shell: bash
+        run: python "${IDF_PATH}/tools/idf_tools.py" install qemu-riscv32
+
+      # No TTY on a runner, so idf_monitor cannot be used; qemu.sh notices and
+      # lets QEMU write straight to stdout.
+      - name: Run, with a time limit
+        shell: bash
+        run: |
+          set +e
+          timeout 180 ./tools/qemu.sh --no-monitor > qemu.log 2>&1
+          echo "exit: $?"      # 124 from timeout is the expected outcome
+
+      - name: The output must be right, not merely present
+        shell: bash
+        run: |
+          # Strip the ANSI colouring the ESP-IDF log emits, or the patterns
+          # below would have to match escape sequences too.
+          log="$(sed 's/\x1b\[[0-9;]*m//g' qemu.log)"
+          fail=0
+          check() {
+            if grep -qF -- "$2" <<< "${log}"; then
+              echo "  ok      $1"
+            else
+              echo "  MISSING $1  (expected: $2)"
+              fail=1
+            fi
+          }
+          check "second-stage bootloader ran"  "2nd stage bootloader"
+          check "app_main was reached"         "Calling app_main()"
+          check "misa was read"                "misa = 0x"
+          check "1 + 2 + ... + 55 = 1540"      "asm_sum_loop(55)         = 1540"
+          check "both methods agree"           "self-check: PASS"
+          check "the result table was filled"  "g_result_table at 0x"
+          check "the example's own assembly"   "app_count_ones(0x0F0F0F0F)   = 16"
+          check "byte reversal"                "app_reverse_bytes(0x12345678)= 0x78563412"
+          check "the LED task is running"      "[led ]"
+          check "the compute task is running"  "[calc] n=55 loop=1540"
+
+          if grep -qE "Guru Meditation|rst:0x[0-9a-f]+ \\(.*WDT|abort\\(\\) was called" \
+                  <<< "${log}"; then
+            echo "  CRASH   the firmware panicked or was reset"
+            fail=1
+          else
+            echo "  ok      no panic, no watchdog reset"
+          fi
+          exit "${fail}"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qemu-log
+          path: qemu.log
 
   # ---------------------------------------------------------------------
   generate:

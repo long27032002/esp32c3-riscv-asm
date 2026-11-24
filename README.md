@@ -68,10 +68,28 @@ tools/                     setup, project generator, docs, JTAG recovery
 Open a **project** folder in VS Code, not the repository root — `F5` then
 stops at `sum_loop`, with the MEMORY and xRTOS panels wired up.
 
+### Without a board
+
+```bash
+./tools/qemu.sh              # run on Espressif's QEMU
+./tools/qemu.sh --gdb        # and wait for a debugger on port 3333
+```
+
+In VS Code pick **Debug on QEMU (no board)**. Breakpoints, stepping,
+Disassembly and MEMORY all behave as on hardware.
+
+What the emulator will not tell you: no LED lights up and the BOOT button can
+never be pressed, cycle counts come from emulated instructions rather than the
+real pipeline, and the xRTOS task list stays empty — task awareness comes from
+OpenOCD, and QEMU's gdbstub reports one thread per CPU. The console is moved
+to UART in `sdkconfig.qemu`, because QEMU does not emulate USB-Serial-JTAG and
+the board configuration boots silent.
+
 | Script | Does |
 |---|---|
 | `tools/setup.sh` | finds ESP-IDF, installs extensions, writes `.vscode/` (`--project DIR` for your own) |
 | `tools/new-project.sh` | new project from the skeleton or an example (`--list`) |
+| `tools/qemu.sh` | run or debug on the emulator, no board needed |
 | `tools/recover-jtag.sh` | watchdog reset when the debug module wedges |
 | `tools/build-docs.sh` | Doxygen, English and Vietnamese |
 | `tools/check-release.sh` | scans for machine paths, board serials, keys |
@@ -92,6 +110,8 @@ BOOT button on **GPIO9**.
 |---|---|
 | `Examination failed`, `Unsupported DTM version: -1` | `./tools/recover-jtag.sh` — a plain reset is not enough |
 | `couldn't bind … port 6666` | a stale OpenOCD: `pkill -x openocd` |
+| QEMU boots then goes silent | the console is on USB-Serial-JTAG; use `tools/qemu.sh`, which layers `sdkconfig.qemu` |
+| QEMU: `libslirp.so.0: cannot open shared object file` | install `libslirp` (`libslirp0` on Debian) |
 | `env: 'bash\r': No such file` | CRLF line endings: `sed -i 's/\r$//' tools/*.sh` |
 | serial port renamed after a reset | native USB re-enumerates; the generated config uses the stable `by-id` path |
 | extension reports `OPENOCD_SCRIPTS … missing` | use the default debug configuration, or register ESP-IDF with the extension |

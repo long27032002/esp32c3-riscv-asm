@@ -69,10 +69,28 @@ tools/                     cài đặt, tạo dự án, tài liệu, gỡ kẹt 
 Mở thư mục **project** trong VS Code, đừng mở gốc repo — khi đó `F5` dừng ở
 `sum_loop`, có sẵn panel MEMORY và xRTOS.
 
+### Không có board
+
+```bash
+./tools/qemu.sh              # chạy trên QEMU của Espressif
+./tools/qemu.sh --gdb        # và chờ debugger ở cổng 3333
+```
+
+Trong VS Code chọn **Debug on QEMU (no board)**. Breakpoint, chạy từng lệnh,
+Disassembly và MEMORY hoạt động y như trên phần cứng.
+
+Những gì QEMU không cho biết: LED không sáng và không bao giờ bấm được nút
+BOOT, số chu kỳ đếm theo lệnh mô phỏng chứ không theo pipeline thật, và danh
+sách task xRTOS rỗng — tính năng đó do OpenOCD cung cấp, còn gdbstub của QEMU
+chỉ báo một thread cho mỗi CPU. Console được chuyển sang UART trong
+`sdkconfig.qemu`, vì QEMU không mô phỏng USB-Serial-JTAG và cấu hình cho board
+sẽ khởi động im lặng.
+
 | Script | Làm gì |
 |---|---|
 | `tools/setup.sh` | tìm ESP-IDF, cài extension, sinh `.vscode/` (`--project DIR` cho dự án riêng) |
 | `tools/new-project.sh` | tạo dự án từ khung rỗng hoặc example (`--list`) |
+| `tools/qemu.sh` | chạy hoặc debug trên máy ảo, không cần board |
 | `tools/recover-jtag.sh` | watchdog reset khi debug module kẹt |
 | `tools/build-docs.sh` | Doxygen, tiếng Anh và tiếng Việt |
 | `tools/check-release.sh` | quét đường dẫn máy, số serial board, khoá |
@@ -93,6 +111,8 @@ thấp**, nút BOOT ở **GPIO9**.
 |---|---|
 | `Examination failed`, `Unsupported DTM version: -1` | `./tools/recover-jtag.sh` — reset thường không đủ |
 | `couldn't bind … port 6666` | còn OpenOCD cũ: `pkill -x openocd` |
+| QEMU khởi động rồi im lặng | console đang ở USB-Serial-JTAG; dùng `tools/qemu.sh`, nó nạp thêm `sdkconfig.qemu` |
+| QEMU: `libslirp.so.0: cannot open shared object file` | cài `libslirp` (Debian: `libslirp0`) |
 | `env: 'bash\r': No such file` | kết thúc dòng CRLF: `sed -i 's/\r$//' tools/*.sh` |
 | cổng serial đổi tên sau reset | USB tích hợp nối lại; cấu hình sinh ra dùng đường dẫn `by-id` cố định |
 | extension báo `OPENOCD_SCRIPTS … missing` | dùng cấu hình debug mặc định, hoặc đăng ký ESP-IDF với extension |

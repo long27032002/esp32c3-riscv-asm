@@ -59,6 +59,53 @@
             }
         },
         {
+            // Started automatically by "Debug on QEMU". qemu.sh prints a
+            // QEMU_READY line of its own once the port actually accepts a
+            // connection: QEMU is silent when it stops at the reset vector,
+            // so there is nothing else to wait for, and starting the debugger
+            // too early fails with "Connection refused".
+            //
+            // QEMU's gdbstub listens on 3333, the same port as OpenOCD, so
+            // qemu.sh kills a leftover OpenOCD before starting.
+            "label": "qemu (gdb server)",
+            "type": "shell",
+            "command": "'@QEMU_SH@' --gdb --project '${workspaceFolder}'",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "qemu",
+                "source": "qemu",
+                "fileLocation": ["relative", "${workspaceFolder}"],
+                "pattern": [
+                    {
+                        "kind": "file",
+                        "regexp": "^QEMU_NEVER_MATCHES__(.*)$",
+                        "file": 1,
+                        "message": 1
+                    }
+                ],
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^\\s*building|^QEMU,",
+                    "endsPattern": "QEMU_READY"
+                }
+            },
+            "runOptions": { "instanceLimit": 1 },
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "silent",
+                "group": "debug",
+                "close": true
+            }
+        },
+        {
+            // Run on the emulator with no debugger and no board attached.
+            "label": "qemu (run)",
+            "type": "shell",
+            "command": "'@QEMU_SH@' --project '${workspaceFolder}'",
+            "problemMatcher": [],
+            "presentation": { "panel": "dedicated", "reveal": "always" }
+        },
+        {
             "label": "build",
             "type": "shell",
             "command": ". '@IDF_PATH@/export.sh' >/dev/null && idf.py build",

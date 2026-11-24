@@ -331,6 +331,7 @@ else
             -e "s|@TARGET@|${TARGET}|g" \
             -e "s|@PROJECT_NAME@|${PROJECT_NAME}|g" \
             -e "s|@INITIAL_BREAKPOINT@|${INITIAL_BREAKPOINT}|g" \
+            -e "s|@QEMU_SH@|${REPO_ROOT}/tools/qemu.sh|g" \
             "${src}" > "${dst}"
         ok "${dst#"${PROJECT_DIR}"/}"
     }

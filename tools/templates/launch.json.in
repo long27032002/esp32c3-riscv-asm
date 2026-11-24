@@ -32,6 +32,41 @@
             }
         },
         {
+            // No board required. qemu.sh builds into build-qemu/ with the
+            // console moved to UART, because QEMU does not emulate
+            // USB-Serial-JTAG and the board configuration would boot silent.
+            //
+            // Breakpoints, stepping, Disassembly and the MEMORY view all work.
+            // The xRTOS task list does not: task awareness comes from
+            // OpenOCD's -rtos support, and QEMU's gdbstub reports one thread
+            // per emulated CPU instead. Timing and GPIO are not real either -
+            // see the comment at the top of tools/qemu.sh.
+            "name": "Debug on QEMU (no board)",
+            "type": "gdbtarget",
+            "request": "attach",
+            "preLaunchTask": "qemu (gdb server)",
+            "runOpenOCD": false,
+            "gdb": "@GDB_BIN@",
+            "program": "${workspaceFolder}/build-qemu/@PROJECT_NAME@.elf",
+            "cwd": "${workspaceFolder}",
+            "openGdbConsole": true,
+            "initialBreakpoint": "@INITIAL_BREAKPOINT@",
+            "initCommands": [
+                "set remotetimeout 20",
+                "set print pretty on"
+            ],
+            "target": {
+                "connectCommands": [
+                    "set remotetimeout 20",
+                    // QEMU holds the CPU at the reset vector until a debugger
+                    // connects, so no "monitor reset halt" is needed - and
+                    // QEMU's gdbstub would reject it: monitor commands there
+                    // are QEMU's own, not OpenOCD's.
+                    "target remote localhost:3333"
+                ]
+            }
+        },
+        {
             // Let the ESP-IDF extension start OpenOCD itself.
             // This only works once the extension knows about an ESP-IDF
             // installation (~/.espressif/esp_idf.json). If it is missing the

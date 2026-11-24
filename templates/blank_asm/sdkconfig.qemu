@@ -1,0 +1,13 @@
+# Overrides layered on top of sdkconfig.defaults when running under QEMU.
+# Used by tools/qemu.sh, which builds into build-qemu/ so the board build in
+# build/ is left alone.
+
+# QEMU emulates UART0. It does not emulate the USB-Serial-JTAG peripheral, so
+# a build that routes the console there boots to complete silence: the ROM and
+# the bootloader still print, because they use UART0, and then nothing. Hours
+# can go into looking for a crash that never happened.
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+
+# Nothing is attached to the emulated USB port either, so a console waiting
+# for the host to open it would block forever.
+CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
