@@ -331,9 +331,9 @@ Trong VS Code, chọn **Debug on QEMU (no board)** rồi bấm F5.
 
 ### Cái gì chạy được, cái gì máy ảo không nói cho bạn biết
 
-Breakpoint, chạy từng lệnh, panel Disassembly, **toàn bộ tập thanh ghi** — cả
-thanh ghi đa dụng *lẫn* CSR (`misa`, `mstatus`, `mtvec`, `mepc`, `mcause`) —
-ghi vào thanh ghi, và panel MEMORY đều hoạt động y như qua JTAG.
+Breakpoint, chạy từng lệnh, panel Disassembly, đủ 32 thanh ghi đa dụng cùng
+`pc` trong **Variables → Registers**, ghi vào thanh ghi, và panel MEMORY đều
+hoạt động y như qua JTAG.
 
 Những thứ không chuyển sang được:
 
@@ -344,6 +344,15 @@ Những thứ không chuyển sang được:
   không theo pipeline thật. Thời gian truy cập flash không được mô hình hoá.
 - **Không có danh sách task xRTOS.** Khả năng nhận biết task đến từ `-rtos` của
   OpenOCD; gdbstub của QEMU chỉ báo một thread cho mỗi CPU mô phỏng.
+- **Không gọi được CSR theo tên.** QEMU quảng cáo nhiều CSR hơn số nó chịu
+  phục vụ, mà panel Registers hỏi tất cả thanh ghi trong **một** lệnh, nên chỉ
+  cần một lần từ chối — đầu tiên là `htimedelta`, một CSR hypervisor — là cả
+  panel trống. Vì vậy cấu hình QEMU đưa cho gdb một mô tả rút gọn
+  (`tools/templates/riscv-qemu.xml`), và cái giá là mất tên CSR: `p/x $misa`
+  trả về `void`. Hãy đọc chúng từ chính chương trình — `asm_read_misa()` làm
+  đúng việc đó — hoặc debug trên board, nơi OpenOCD chỉ khai những thanh ghi
+  nó phục vụ được nên cả panel lẫn tên CSR đều chạy. Muốn đánh đổi theo chiều
+  ngược lại, xoá dòng `set tdesc filename` trong `.vscode/launch.json`.
 - **`misa` khác.** QEMU báo `0x401411ad`; header ghi giá trị của chip là
   `0x40101104`. Nếu bạn đang khảo sát silicon thật có những phần mở rộng nào,
   phải dùng board.
@@ -477,6 +486,7 @@ là cách tài liệu tham chiếu mục ruỗng dần.
 | QEMU: `Failed to bind socket`, hoặc debugger không kết nối được | OpenOCD hoặc một QEMU cũ đang giữ 3333. `pkill -x openocd; pkill -f '[q]emu-system-riscv32'`. Lưu ý `pkill -x qemu-system-riscv32` không khớp gì cả: `/proc/PID/comm` cắt tên còn 15 ký tự. |
 | QEMU khởi động, in bootloader rồi im | Console đang ở USB-Serial-JTAG, QEMU không mô phỏng. Dùng `tools/qemu.sh`, nó nạp thêm `sdkconfig.qemu`. |
 | QEMU: `libslirp.so.0: cannot open shared object file` | Cài libslirp (Debian và Ubuntu: `libslirp0`). |
+| Panel Registers chỉ hiện `Could not fetch register "h…"` | QEMU khai cả những CSR nó không phục vụ, và chỉ một lần từ chối là hỏng cả lệnh. Sinh lại bằng `tools/setup.sh`, nó trỏ gdb sang một mô tả thanh ghi rút gọn. |
 | Debug console của QEMU hiện `unknown command: 'reset'` | Vô hại. Extension tự chèn `monitor reset halt`; gdbstub của QEMU không có lệnh đó, mà kết nối thì đã lên rồi. Cũng chẳng cần reset — QEMU giữ CPU ở reset vector tới khi debugger gắn vào. |
 | `A program is being debugged already` / `could not connect: Connection timed out` | Có thứ gì đó connect hai lần. `initCommands` được gửi *sau* khi adapter đã kết nối, nên để `target remote` ở đó — hoặc trong `connectCommands` — là connect lần nữa. Sinh lại bằng `tools/setup.sh`. |
 | Cổng serial đổi tên sau khi reset | USB tích hợp nối lại. Cấu hình sinh ra dùng đường dẫn cố định `/dev/serial/by-id/...`; muốn ép thì truyền `--port`. |

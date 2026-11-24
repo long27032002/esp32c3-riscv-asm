@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<!DOCTYPE target SYSTEM "gdb-target.dtd">
+<!--
+  Target description for debugging on QEMU.
+
+  QEMU's gdb stub advertises far more CSRs than it will actually serve. gdb
+  believes the advertisement, and the debug adapter asks for every register at
+  once with -data-list-register-values; a single refusal fails the whole
+  request, so the Registers view shows one error instead of 32 registers. The
+  first refusal is "htimedelta", a hypervisor CSR that exists only because
+  QEMU reports misa with the H bit set. Turning H off does not help - the next
+  refusal is "time".
+
+  Overriding the description with this file keeps gdb to the registers QEMU
+  really serves in bulk: the integer file and pc. Point gdb at it BEFORE
+  connecting - a target description cannot be changed afterwards:
+
+      set tdesc filename tools/templates/riscv-qemu.xml
+
+  THE COST. gdb then knows only the registers listed here, so on QEMU the CSRs
+  are no longer named: "p/x $misa" answers "void". The CSRs are still there and
+  still readable one at a time by number, but nothing in gdb's interface offers
+  that. Read them from the program instead - asm_read_misa() does exactly that
+  - or debug on the board, where OpenOCD advertises only registers it serves
+  and both the pane and the CSR names work.
+
+  Listing the CSRs here does not help: gdb numbers registers by their position
+  in this file when the description is local, so the numbers no longer match
+  the ones QEMU expects on the wire, and the reads come back refused or wrong.
+
+  To keep the CSR names on QEMU and give up the Registers pane instead, delete
+  the "set tdesc filename" line from .vscode/launch.json.
+-->
+<target version="1.0">
+  <architecture>riscv:rv32</architecture>
+
+  <feature name="org.gnu.gdb.riscv.cpu">
+    <reg name="zero" bitsize="32" type="int" regnum="0"/>
+    <reg name="ra"   bitsize="32" type="code_ptr"/>
+    <reg name="sp"   bitsize="32" type="data_ptr"/>
+    <reg name="gp"   bitsize="32" type="data_ptr"/>
+    <reg name="tp"   bitsize="32" type="data_ptr"/>
+    <reg name="t0"   bitsize="32" type="int"/>
+    <reg name="t1"   bitsize="32" type="int"/>
+    <reg name="t2"   bitsize="32" type="int"/>
+    <reg name="fp"   bitsize="32" type="data_ptr"/>
+    <reg name="s1"   bitsize="32" type="int"/>
+    <reg name="a0"   bitsize="32" type="int"/>
+    <reg name="a1"   bitsize="32" type="int"/>
+    <reg name="a2"   bitsize="32" type="int"/>
+    <reg name="a3"   bitsize="32" type="int"/>
+    <reg name="a4"   bitsize="32" type="int"/>
+    <reg name="a5"   bitsize="32" type="int"/>
+    <reg name="a6"   bitsize="32" type="int"/>
+    <reg name="a7"   bitsize="32" type="int"/>
+    <reg name="s2"   bitsize="32" type="int"/>
+    <reg name="s3"   bitsize="32" type="int"/>
+    <reg name="s4"   bitsize="32" type="int"/>
+    <reg name="s5"   bitsize="32" type="int"/>
+    <reg name="s6"   bitsize="32" type="int"/>
+    <reg name="s7"   bitsize="32" type="int"/>
+    <reg name="s8"   bitsize="32" type="int"/>
+    <reg name="s9"   bitsize="32" type="int"/>
+    <reg name="s10"  bitsize="32" type="int"/>
+    <reg name="s11"  bitsize="32" type="int"/>
+    <reg name="t3"   bitsize="32" type="int"/>
+    <reg name="t4"   bitsize="32" type="int"/>
+    <reg name="t5"   bitsize="32" type="int"/>
+    <reg name="t6"   bitsize="32" type="int"/>
+    <reg name="pc"   bitsize="32" type="code_ptr"/>
+  </feature>
+
+</target>
