@@ -19,7 +19,13 @@
 #include "freertos/task.h"
 #include "esp_heap_caps.h"
 
-#include "riscv_asm.h"
+#include "riscv_asm.h"      /* the component */
+
+/** @brief Count the set bits of @p value. Implemented in app_asm.S. */
+uint32_t app_count_ones(uint32_t value);
+
+/** @brief Swap the byte order of @p value. Implemented in app_asm.S. */
+uint32_t app_reverse_bytes(uint32_t value);
 
 /** @brief On-board LED of the ESP32-C3 SuperMini; active low (0 = lit). */
 #define LED_GPIO            8
@@ -159,8 +165,16 @@ void app_main(void)
     }
     printf("\n");
 
+    /* --- This example's own assembly, in main/app_asm.S ----------------- */
+    printf("[5] assembly belonging to this example (main/app_asm.S)\n");
+    printf("    app_count_ones(0x0F0F0F0F)   = %" PRIu32 "   (expect 16)\n",
+           app_count_ones(0x0F0F0F0FU));
+    printf("    app_reverse_bytes(0x12345678)= 0x%08" PRIx32 "   (expect 0x78563412)\n",
+           app_reverse_bytes(0x12345678U));
+    printf("    edit that file and rebuild - it is yours to experiment with\n\n");
+
     /* --- Tasks ---------------------------------------------------------- */
-    printf("[5] creating tasks: task_led, task_compute, task_monitor\n\n");
+    printf("[6] creating tasks: task_led, task_compute, task_monitor\n\n");
     (void)xTaskCreate(task_led,     "task_led",     2560, NULL, 5, NULL);
     (void)xTaskCreate(task_compute, "task_compute", 2560, NULL, 4, NULL);
     (void)xTaskCreate(task_monitor, "task_monitor", 3584, NULL, 3, NULL);

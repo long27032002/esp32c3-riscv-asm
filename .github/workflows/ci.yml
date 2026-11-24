@@ -2,14 +2,19 @@
 #
 # WHAT CI CAN AND CANNOT DO HERE
 #
-# GitHub runners are virtual machines with no ESP32-C3 attached, so CI can
-# never flash the board, run the program, drive JTAG, blink the LED or measure
-# cycle counts. Those remain manual checks, documented in the README.
+# GitHub runners have no ESP32-C3 attached, so CI can never flash the board,
+# drive JTAG, blink the LED or measure real cycle counts. Those remain manual
+# checks, documented in the README.
+#
+# The program itself does run, though: the qemu job emulates the chip and
+# checks the output, so a change that breaks the arithmetic or stops the
+# tasks from starting fails here rather than on someone's desk.
 #
 # What CI does cover is everything that fails silently when a change looks
 # harmless:
 #
 #   build       every example still compiles, with warnings treated as errors
+#   qemu        the firmware actually runs, and prints the right answers
 #   component   the component packs cleanly for the ESP Component Registry
 #   generate    tools/setup.sh still produces valid VS Code configuration
 #   leaks       no machine path, board serial number or key is committed
@@ -49,7 +54,7 @@ jobs:
           . "${IDF_PATH}/export.sh" >/dev/null
           # Warnings become errors: a template that ships with warnings
           # teaches people to ignore them.
-          for ex in components/esp32c3_riscv_asm/examples/*/; do
+          for ex in examples/*/; do
             echo "::group::$(basename "${ex}")"
             ( cd "${ex}" \
               && idf.py build -DEXTRA_CFLAGS="-Werror" -DEXTRA_CXXFLAGS="-Werror" \
@@ -70,7 +75,7 @@ jobs:
         shell: bash
         run: |
           . "${IDF_PATH}/export.sh" >/dev/null
-          elf=components/esp32c3_riscv_asm/examples/hello_asm/build/hello_asm.elf
+          elf=examples/hello_asm/build/hello_asm.elf
           # Read the symbol table once, then match against a here-string.
           # "nm | grep -q" looks natural but breaks under "set -o pipefail",
           # which GitHub sets for every bash step: grep -q exits at the first
@@ -95,10 +100,82 @@ jobs:
         with:
           name: firmware
           path: |
-            components/esp32c3_riscv_asm/examples/hello_asm/build/hello_asm.bin
-            components/esp32c3_riscv_asm/examples/hello_asm/build/hello_asm.elf
-            components/esp32c3_riscv_asm/examples/hello_asm/build/hello_asm.map
+            examples/hello_asm/build/hello_asm.bin
+            examples/hello_asm/build/hello_asm.elf
+            examples/hello_asm/build/hello_asm.map
           if-no-files-found: error
+
+  # ---------------------------------------------------------------------
+  qemu:
+    name: Run the example on QEMU
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.3.5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Espressif's QEMU links against libslirp, which the image does not
+      # carry. Without it the binary unpacks and then fails to start with
+      # "libslirp.so.0: cannot open shared object file".
+      - name: Dependencies
+        shell: bash
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq libslirp0
+
+      - name: Install the emulator
+        shell: bash
+        run: python "${IDF_PATH}/tools/idf_tools.py" install qemu-riscv32
+
+      # No TTY on a runner, so idf_monitor cannot be used; qemu.sh notices and
+      # lets QEMU write straight to stdout.
+      - name: Run, with a time limit
+        shell: bash
+        run: |
+          set +e
+          timeout 180 ./tools/qemu.sh --no-monitor > qemu.log 2>&1
+          echo "exit: $?"      # 124 from timeout is the expected outcome
+
+      - name: The output must be right, not merely present
+        shell: bash
+        run: |
+          # Strip the ANSI colouring the ESP-IDF log emits, or the patterns
+          # below would have to match escape sequences too.
+          log="$(sed 's/\x1b\[[0-9;]*m//g' qemu.log)"
+          fail=0
+          check() {
+            if grep -qF -- "$2" <<< "${log}"; then
+              echo "  ok      $1"
+            else
+              echo "  MISSING $1  (expected: $2)"
+              fail=1
+            fi
+          }
+          check "second-stage bootloader ran"  "2nd stage bootloader"
+          check "app_main was reached"         "Calling app_main()"
+          check "misa was read"                "misa = 0x"
+          check "1 + 2 + ... + 55 = 1540"      "asm_sum_loop(55)         = 1540"
+          check "both methods agree"           "self-check: PASS"
+          check "the result table was filled"  "g_result_table at 0x"
+          check "the example's own assembly"   "app_count_ones(0x0F0F0F0F)   = 16"
+          check "byte reversal"                "app_reverse_bytes(0x12345678)= 0x78563412"
+          check "the LED task is running"      "[led ]"
+          check "the compute task is running"  "[calc] n=55 loop=1540"
+
+          if grep -qE "Guru Meditation|rst:0x[0-9a-f]+ \\(.*WDT|abort\\(\\) was called" \
+                  <<< "${log}"; then
+            echo "  CRASH   the firmware panicked or was reset"
+            fail=1
+          else
+            echo "  ok      no panic, no watchdog reset"
+          fi
+          exit "${fail}"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qemu-log
+          path: qemu.log
 
   # ---------------------------------------------------------------------
   generate:
@@ -123,7 +200,7 @@ jobs:
           python3 - <<'PY'
           import json, re, sys, pathlib
           failed = False
-          root = pathlib.Path("components/esp32c3_riscv_asm/examples/hello_asm/.vscode")
+          root = pathlib.Path("examples/hello_asm/.vscode")
           for p in sorted(root.glob("*.json")):
               text = p.read_text(encoding="utf8")
               left = re.findall(r"@[A-Z_]+@", text)
@@ -174,21 +251,36 @@ jobs:
       - name: The archive must carry the sources and nothing generated
         shell: bash
         run: |
-          cd components/esp32c3_riscv_asm
-          archive="$(ls dist/*.tgz)"
+          # compote writes two archives when the manifest points at
+          # examples outside the component, so the name has to be pinned
+          # rather than globbed.
+          d=components/esp32c3_riscv_asm/dist
+          v="$(python3 -c "
+          import yaml; print(yaml.safe_load(
+              open('components/esp32c3_riscv_asm/idf_component.yml'))['version'])")"
+          archive="${d}/esp32c3_riscv_asm_${v}.tgz"
           listing="$(tar tzf "${archive}")"
           fail=0
-          # README, LICENSE and CHANGELOG are what the registry page shows.
-          # 1.0.0 shipped without any of them and the component page came out
-          # blank, which nothing in the build would have caught.
-          for want in ./CMakeLists.txt ./include/riscv_asm.h ./asm/riscv_asm.S \
-                      ./README.md ./LICENSE ./CHANGELOG.md; do
+          # README and LICENSE are what the registry page shows. 1.0.0 and
+          # 1.0.1 shipped without them and the page came out blank, which
+          # nothing in the build would have caught.
+          for want in ./CMakeLists.txt ./riscv_asm.h ./riscv_asm.S \
+                      ./README.md ./LICENSE; do
             if grep -qx -- "${want}" <<< "${listing}"; then
               echo "  ok      ${want}"
             else
               echo "  MISSING ${want}"; fail=1
             fi
           done
+          # The example travels in its own archive; losing it would break
+          # "idf.py create-project-from-example".
+          ex="$(tar tzf "${d}/esp32c3_riscv_asm_${v}_examples.tgz")"
+          if grep -q 'hello_asm/main/app_asm.S' <<< "${ex}"; then
+            echo "  ok      examples archive carries hello_asm"
+          else
+            echo "  MISSING hello_asm in the examples archive"; fail=1
+          fi
+
           junk="$(grep -E '(^|/)(build|managed_components|\.vscode)/' \
                   <<< "${listing}" || true)"
           if [ -n "${junk}" ]; then
@@ -270,7 +362,9 @@ jobs:
       - name: Line endings must be LF
         run: |
           bad=0
-          for f in tools/*.sh main/*.c main/*.h main/*.S; do
+          for f in tools/*.sh components/*/*.S components/*/*.h \
+                   examples/*/main/* templates/*/main/*; do
+            [ -f "$f" ] || continue
             if grep -qU $'\r' "$f"; then echo "  CRLF  $f"; bad=1; else echo "  ok   $f"; fi
           done
           exit "$bad"
@@ -305,13 +399,23 @@ jobs:
         run: |
           # No ESP-IDF and no board on the runner, so the expected outcome is a
           # clean failure with a readable message, not a stack trace.
-          $out = & powershell -NoProfile -ExecutionPolicy Bypass `
-                   -File tools\setup.ps1 -Check -NoInstall 2>&1 | Out-String
-          Write-Host $out
-          if ($out -match 'ESP-IDF not found' -or $out -match '\[fail\]') {
-              Write-Host "  ok   failed cleanly as expected"
-          } else {
-              Write-Host "  note unexpected output, inspect the log above"
+          $cases = @(
+              @{ File = "tools\setup.ps1"; Args = @("-Check", "-NoInstall") },
+              @{ File = "tools\qemu.ps1";  Args = @("-NoBuild") }
+          )
+          foreach ($c in $cases) {
+              $out = & powershell -NoProfile -ExecutionPolicy Bypass `
+                       -File $c.File @($c.Args) 2>&1 | Out-String
+              Write-Host "---- $($c.File)"
+              Write-Host $out
+              if ($out -match 'ESP-IDF not found' -or $out -match '\[fail\]') {
+                  Write-Host "  ok   $($c.File) failed cleanly as expected"
+              } elseif ($out -match 'Exception|at line|ParserError') {
+                  Write-Host "  FAIL $($c.File) crashed instead of reporting"
+                  exit 1
+              } else {
+                  Write-Host "  note $($c.File): unexpected output, see above"
+              }
           }
           # setup.ps1 exiting non-zero is the expected outcome here, but a pwsh
           # step inherits $LASTEXITCODE and would mark itself failed. Clear it.

@@ -10,7 +10,7 @@
 ## be run by hand from the Actions tab as a dry run, which validates the
 ## archive against the registry without credentials and without publishing.
 
-version: "1.0.2"
+version: "1.1.0"
 description: >-
   RISC-V (RV32IMC) assembly routines for the ESP32-C3, documented with Doxygen
   and callable from C. Includes a VS Code debug setup with MEMORY and xRTOS
@@ -38,12 +38,9 @@ dependencies:
 targets:
   - esp32c3
 
-## Keep the archive to what a consumer actually needs.
-files:
-  exclude:
-    - "examples/**/build/**/*"
-    - "docs/**/*"
-    - ".github/**/*"
-    - "tools/**/*"
-    - "**/.vscode/*"
-    - "Doxyfile*"
+## The examples live beside the component rather than inside it, so the
+## repository keeps one examples/ directory instead of two. The registry
+## follows these paths when packing, which is what makes
+## "idf.py create-project-from-example ...:hello_asm" work.
+examples:
+  - path: ../../examples/hello_asm
