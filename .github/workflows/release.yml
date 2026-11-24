@@ -47,6 +47,12 @@ jobs:
       - name: The tag and the manifest must agree
         shell: bash
         run: |
+          # export.sh first: the container's system python3 has no PyYAML,
+          # only the ESP-IDF environment does. Without this the step dies
+          # with "ModuleNotFoundError: No module named 'yaml'" before it has
+          # compared anything - which is how the first v1.0.0 tag failed.
+          . "${IDF_PATH}/export.sh" >/dev/null
+
           manifest="$(python3 -c "
           import yaml
           print(yaml.safe_load(open('${COMPONENT_DIR}/idf_component.yml'))['version'])")"
