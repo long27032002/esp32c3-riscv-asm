@@ -15,8 +15,7 @@ OUTPUT_LANGUAGE        = English
 
 # Both READMEs are listed so the language-switch link between them resolves;
 # leaving one out makes Doxygen warn about an unresolvable \ref.
-INPUT                  = components/esp32c3_riscv_asm/include \
-                         components/esp32c3_riscv_asm/asm \
+INPUT                  = components/esp32c3_riscv_asm \
                          components/esp32c3_riscv_asm/examples \
                          README.md README.vi.md
 

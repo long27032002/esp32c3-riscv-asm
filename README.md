@@ -17,10 +17,10 @@ Pick whichever fits what you are doing.
 
 ```bash
 # 1. Run the worked example, straight from the registry
-idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.0.2:hello_asm"
+idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.1.0:hello_asm"
 
 # 2. Add the routines to a project you already have
-idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.0.2"
+idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.1.0"
 
 # 3. Start something new, from a clone of this repository
 git clone https://github.com/long27032002/esp32c3-riscv-asm.git
@@ -151,75 +151,6 @@ toolchain, a GDB and an OpenOCD that do not belong together. The script sources
 the ESP-IDF actually in use.
 
 ---
-
-## Publishing to the ESP Component Registry
-
-The component is not published yet. Everything needed is in place; these are
-the steps.
-
-### 1. Validate first, no account needed
-
-A dry run uploads the archive for checking and publishes nothing. The registry
-accepts it anonymously:
-
-```bash
-cd components/esp32c3_riscv_asm
-compote component pack   --name esp32c3_riscv_asm --version 1.0.0
-compote component upload --name esp32c3_riscv_asm --version 1.0.0 --dry-run
-# NOTICE: Uploaded archive is valid
-```
-
-Or from the **Actions** tab: *Publish to ESP Component Registry* ->
-**Run workflow**, leaving "dry run" ticked.
-
-### 2. Create a token
-
-Sign in at [components.espressif.com](https://components.espressif.com) ->
-**Profile** -> **Tokens** -> create one with the `write:components` scope.
-
-Your account name becomes the namespace: a component owned by `alice` installs
-as `alice/esp32c3_riscv_asm`.
-
-### 3. Store the token
-
-Repository -> **Settings** -> **Secrets and variables** -> **Actions** ->
-**New repository secret**, named `IDF_COMPONENT_API_TOKEN`.
-
-### 4. Publish
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-The workflow refuses to run if the tag and the `version` in
-`idf_component.yml` disagree. **A published version is permanent** — the
-registry can yank a version but never reuse its number, so bump the manifest
-for every release.
-
-To publish from your own machine instead:
-
-```bash
-export IDF_COMPONENT_API_TOKEN=...
-cd components/esp32c3_riscv_asm
-compote component upload --namespace <your-account> \
-                         --name esp32c3_riscv_asm --version 1.0.0
-```
-
-Without `--namespace`, compote defaults to `espressif` and the registry
-answers *"You do not have upload permissions"*. In CI the namespace defaults
-to the GitHub repository owner; set the repository variable
-`IDF_COMPONENT_NAMESPACE` if your registry account has a different name.
-
-### If your namespace is not `long27032002`
-
-Three places name it, and they must agree:
-
-| File | What to change |
-|---|---|
-| `tools/new-project.sh` | `NAMESPACE=` near the top |
-| `README.md`, `README.vi.md` | the `idf.py add-dependency` lines |
-| `components/.../examples/hello_asm/README.md` | the `create-project-from-example` line |
 
 
 ## Continuous integration (GitHub Actions)

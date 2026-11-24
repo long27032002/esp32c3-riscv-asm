@@ -17,10 +17,10 @@ Chọn cách hợp với việc bạn đang làm.
 
 ```bash
 # 1. Chạy example, tải thẳng từ registry
-idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.0.2:hello_asm"
+idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.1.0:hello_asm"
 
 # 2. Thêm thư viện vào dự án sẵn có
-idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.0.2"
+idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.1.0"
 
 # 3. Bắt đầu dự án mới, từ bản clone repo này
 git clone https://github.com/long27032002/esp32c3-riscv-asm.git
@@ -145,72 +145,6 @@ toolchain, GDB và OpenOCD. Script nạp `export.sh` trong một shell con rồi
 `command -v`, nên luôn lấy đúng bộ công cụ của chính bản ESP-IDF đang dùng.
 
 ---
-
-## Phát hành lên ESP Component Registry
-
-Component chưa được phát hành. Mọi thứ đã sẵn sàng, đây là các bước.
-
-### 1. Kiểm tra trước, không cần tài khoản
-
-Dry run gửi gói lên để kiểm tra chứ không phát hành. Registry nhận ẩn danh:
-
-```bash
-cd components/esp32c3_riscv_asm
-compote component pack   --name esp32c3_riscv_asm --version 1.0.0
-compote component upload --name esp32c3_riscv_asm --version 1.0.0 --dry-run
-# NOTICE: Uploaded archive is valid
-```
-
-Hoặc vào tab **Actions**: *Publish to ESP Component Registry* ->
-**Run workflow**, để nguyên ô "dry run".
-
-### 2. Tạo token
-
-Đăng nhập [components.espressif.com](https://components.espressif.com) ->
-**Profile** -> **Tokens** -> tạo token có quyền `write:components`.
-
-Tên tài khoản chính là namespace: component của `alice` sẽ cài bằng
-`alice/esp32c3_riscv_asm`.
-
-### 3. Lưu token vào repo
-
-Repository -> **Settings** -> **Secrets and variables** -> **Actions** ->
-**New repository secret**, đặt tên `IDF_COMPONENT_API_TOKEN`.
-
-### 4. Phát hành
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-Workflow sẽ dừng nếu tag và `version` trong `idf_component.yml` lệch nhau.
-**Phiên bản đã phát hành là vĩnh viễn** — registry cho thu hồi (yank) nhưng
-không cho dùng lại số đó, nên mỗi lần phát hành phải tăng version.
-
-Muốn phát hành từ máy mình:
-
-```bash
-export IDF_COMPONENT_API_TOKEN=...
-cd components/esp32c3_riscv_asm
-compote component upload --namespace <tai-khoan-cua-ban> \
-                         --name esp32c3_riscv_asm --version 1.0.0
-```
-
-Thiếu `--namespace` thì compote mặc định dùng `espressif` và registry báo
-*"You do not have upload permissions"*. Trong CI, namespace mặc định lấy theo
-chủ repo GitHub; nếu tài khoản registry của bạn tên khác thì đặt biến
-`IDF_COMPONENT_NAMESPACE` trong repository variables.
-
-### Nếu namespace của bạn khác `long27032002`
-
-Ba chỗ ghi tên namespace, phải sửa cho khớp:
-
-| File | Sửa gì |
-|---|---|
-| `tools/new-project.sh` | biến `NAMESPACE=` ở đầu file |
-| `README.md`, `README.vi.md` | các dòng `idf.py add-dependency` |
-| `components/.../examples/hello_asm/README.md` | dòng `create-project-from-example` |
 
 
 ## CI tự động (GitHub Actions)

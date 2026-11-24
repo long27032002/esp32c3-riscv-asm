@@ -29,17 +29,17 @@
     .align  2
 
 /**
- * @fn      uint32_t app_double(uint32_t value)
+ * @fn      uint32_t app_asm_func(uint32_t value)
  * @brief   Return twice its argument. Replace this with your own routine.
  * @param   a0  The value to double.
  * @return  a0  Twice @p value, modulo 2^32.
  * @clobber none.
  */
-    .global app_double
-    .type   app_double, @function
-app_double:
+    .global app_asm_func
+    .type   app_asm_func, @function
+app_asm_func:
     slli    a0, a0, 1               /* a0 = value << 1 */
     ret
-    .size   app_double, . - app_double
+    .size   app_asm_func, . - app_asm_func
 
 /* Data sections go here, at the end of the file. */

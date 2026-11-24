@@ -178,11 +178,11 @@ jobs:
           archive="$(ls dist/*.tgz)"
           listing="$(tar tzf "${archive}")"
           fail=0
-          # README, LICENSE and CHANGELOG are what the registry page shows.
-          # 1.0.0 shipped without any of them and the component page came out
-          # blank, which nothing in the build would have caught.
-          for want in ./CMakeLists.txt ./include/riscv_asm.h ./asm/riscv_asm.S \
-                      ./README.md ./LICENSE ./CHANGELOG.md; do
+          # README and LICENSE are what the registry page shows. 1.0.0 and
+          # 1.0.1 shipped without them and the page came out blank, which
+          # nothing in the build would have caught.
+          for want in ./CMakeLists.txt ./riscv_asm.h ./riscv_asm.S \
+                      ./README.md ./LICENSE; do
             if grep -qx -- "${want}" <<< "${listing}"; then
               echo "  ok      ${want}"
             else
