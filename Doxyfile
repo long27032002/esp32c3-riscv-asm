@@ -23,6 +23,13 @@ INPUT                  = components examples \
 # start of a command ("Found unknown command '@PROJECT_NAME'").
 USE_MDFILE_AS_MAINPAGE = README.md
 RECURSIVE              = YES
+## GitHub renders "[text](#heading)" by slugifying the heading; Doxygen's
+## own scheme is different, so every table-of-contents link in the READMEs
+## came out as "unable to resolve reference ... for \ref command" - which
+## build-docs.sh treats as a failure, correctly: those links are broken in
+## the generated manual even though they work on GitHub.
+MARKDOWN_ID_STYLE      = GITHUB
+
 EXCLUDE_PATTERNS       = */build/* */managed_components/* \
                          */examples/*/components/riscv_asm/*
 
