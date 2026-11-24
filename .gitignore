@@ -18,6 +18,10 @@ sdkconfig.old
 **/.vscode/launch.json
 **/.vscode/tasks.json
 **/.vscode/*.bak
+# Also generated: the gdb wrapper and its command file for the QEMU
+# configuration, both holding absolute paths from one machine.
+**/.vscode/gdb-qemu.sh
+**/.vscode/qemu-tdesc.gdb
 # .vscode/extensions.json IS committed on purpose: it lists extension ids
 # only, no paths, and makes VS Code offer to install them on first open.
 
