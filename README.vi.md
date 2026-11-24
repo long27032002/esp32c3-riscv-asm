@@ -3,6 +3,7 @@
 [English](README.md) · **Tiếng Việt**
 
 [![CI](https://github.com/long27032002/esp32c3-riscv-asm/actions/workflows/ci.yml/badge.svg)](https://github.com/long27032002/esp32c3-riscv-asm/actions/workflows/ci.yml)
+[![Tài liệu](https://img.shields.io/badge/docs-en%20%7C%20vi-blue)](https://long27032002.github.io/esp32c3-riscv-asm/)
 
 Các hàm hợp ngữ RISC-V (RV32IMC) cho ESP32-C3, gọi được từ C, kèm toàn bộ công
 cụ để biên dịch, chạy, debug và sinh tài liệu.
@@ -461,6 +462,11 @@ các script `.ps1` phía sau, dùng tham số kiểu PowerShell: `-Gdb`, `-Proje
 ---
 
 ## Tài liệu
+
+Bản tài liệu đã publish ở **<https://long27032002.github.io/esp32c3-riscv-asm/>** — tiếng Anh và tiếng Việt, dựng lại từ
+mã nguồn sau mỗi lần push vào `main`.
+
+Dựng tại máy:
 
 ```bash
 ./tools/build-docs.sh        # → docs/html/index.html
