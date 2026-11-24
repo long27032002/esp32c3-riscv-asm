@@ -10,7 +10,7 @@
 ## be run by hand from the Actions tab as a dry run, which validates the
 ## archive against the registry without credentials and without publishing.
 
-version: "1.0.1"
+version: "1.0.2"
 description: >-
   RISC-V (RV32IMC) assembly routines for the ESP32-C3, documented with Doxygen
   and callable from C. Includes a VS Code debug setup with MEMORY and xRTOS

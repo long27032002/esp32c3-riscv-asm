@@ -3,6 +3,15 @@
 All notable changes to this component.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] - 2026-11-24
+
+### Fixed
+
+- 1.0.1 was published seven minutes before the README, LICENSE and changelog
+  were merged, so its registry page is as empty as 1.0.0's. This version
+  carries them. The release workflow now refuses to publish an archive that
+  is missing any of the three, so the ordering cannot bite a third time.
+
 ## [1.0.1] - 2026-11-24
 
 ### Fixed
