@@ -18,9 +18,16 @@
             // command line of the shell running this very task contains the
             // OpenOCD path, so the task kills its own shell. The symptom is a
             // task that dies instantly with an empty terminal.
+            //
+            // A QEMU left over from "Debug on QEMU" is killed too: its gdb
+            // stub listens on 3333 as well, and OpenOCD would report the
+            // clash on port 6666 instead. The bracketed first character is
+            // what keeps that pattern from matching this task's own shell;
+            // -x cannot be used because /proc/PID/comm truncates the name to
+            // "qemu-system-ris" at 15 characters.
             "label": "openocd",
             "type": "shell",
-            "command": "pkill -x openocd 2>/dev/null; sleep 0.5; exec '@OPENOCD_BIN@' -f '@OPENOCD_CFG@' -c 'tcl port disabled' -c 'telnet port disabled'",
+            "command": "pkill -x openocd 2>/dev/null; pkill -f '[q]emu-system-riscv32 -M @TARGET@' 2>/dev/null; sleep 0.5; exec '@OPENOCD_BIN@' -f '@OPENOCD_CFG@' -c 'tcl port disabled' -c 'telnet port disabled'",
             "options": {
                 "env": { "OPENOCD_SCRIPTS": "@OPENOCD_SCRIPTS@" }
             },

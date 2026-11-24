@@ -95,7 +95,7 @@ sẽ khởi động im lặng.
 | `tools/build-docs.sh` | Doxygen, tiếng Anh và tiếng Việt |
 | `tools/check-release.sh` | quét đường dẫn máy, số serial board, khoá |
 
-Bản Windows: `tools/setup.bat`, `tools/recover-jtag.bat`.
+Bản Windows: `tools/setup.bat`, `tools/qemu.bat`, `tools/recover-jtag.bat`.
 
 ## Phần cứng
 

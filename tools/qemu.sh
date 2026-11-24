@@ -210,9 +210,19 @@ fi
 # ---------------------------------------------------------------------------
 if [ "${GDB_WAIT}" -eq 1 ]; then
     # A stale emulator holds the gdb port and the next run fails with
-    # "Failed to bind socket". Match the process NAME: matching the command
-    # line with pkill -f would also match this script's own command line.
-    pkill -x qemu-system-riscv32 2>/dev/null || true
+    # "Failed to bind socket".
+    #
+    # "pkill -x qemu-system-riscv32" looks right and never matches anything:
+    # -x compares against the process name in /proc/PID/comm, which the kernel
+    # caps at 15 characters, so the name there is "qemu-system-ris". pkill even
+    # warns about it - on stderr, which is usually redirected away - and exits
+    # 1, so the script carries on and QEMU fails to bind a moment later.
+    #
+    # Match the command line instead. The bracket around the first character
+    # keeps the pattern from matching the shell that is running this script,
+    # whose own command line contains the pattern verbatim; "-M esp32c3" then
+    # restricts it to emulators started for this chip.
+    pkill -f '[q]emu-system-riscv32 -M esp32c3' 2>/dev/null || true
     # QEMU's gdbstub and OpenOCD both want port 3333, and OpenOCD is the more
     # likely leftover: it keeps running after a debug session is stopped.
     pkill -x openocd 2>/dev/null || true

@@ -94,7 +94,8 @@ the board configuration boots silent.
 | `tools/build-docs.sh` | Doxygen, English and Vietnamese |
 | `tools/check-release.sh` | scans for machine paths, board serials, keys |
 
-Windows equivalents: `tools/setup.bat`, `tools/recover-jtag.bat`.
+Windows equivalents: `tools/setup.bat`, `tools/qemu.bat`,
+`tools/recover-jtag.bat`.
 
 ## Target
 
