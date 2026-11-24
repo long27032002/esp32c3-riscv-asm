@@ -15,8 +15,7 @@ OUTPUT_LANGUAGE        = English
 
 # Both READMEs are listed so the language-switch link between them resolves;
 # leaving one out makes Doxygen warn about an unresolvable \ref.
-INPUT                  = components/esp32c3_riscv_asm \
-                         components/esp32c3_riscv_asm/examples \
+INPUT                  = riscv_asm.h riscv_asm.S examples \
                          README.md README.vi.md
 
 # templates/ is deliberately left out: those files carry @PLACEHOLDER@ markers
@@ -24,7 +23,8 @@ INPUT                  = components/esp32c3_riscv_asm \
 # start of a command ("Found unknown command '@PROJECT_NAME'").
 USE_MDFILE_AS_MAINPAGE = README.md
 RECURSIVE              = YES
-EXCLUDE_PATTERNS       = */build/* */managed_components/*
+EXCLUDE_PATTERNS       = */build/* */managed_components/* \
+                         */examples/*/components/riscv_asm/*
 
 # Doxygen has no assembly parser. Mapping .S to the C parser is what makes the
 # /** ... */ blocks in the .S files show up in the generated documentation.

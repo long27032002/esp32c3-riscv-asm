@@ -7,12 +7,18 @@
 #   blank      templates/blank_asm, a minimal skeleton: one C file, one .S
 #              file, the component wired in and nothing else to delete
 #
-#   <example>  any directory under components/esp32c3_riscv_asm/examples,
+#   <example>  any directory under examples/,
 #              copied complete and ready to build
 #
-# The new project depends on the esp32c3_riscv_asm component. By default it
-# resolves from the local checkout, so the project builds without a registry
-# account; pass --from-registry to depend on the published component instead.
+# The new project depends on the esp32c3_riscv_asm component. By default the
+# assembly is copied into the project as components/esp32c3_riscv_asm, so it
+# builds with no registry account and the sources are there to edit; pass
+# --from-registry to depend on the published component instead.
+#
+# An override_path to the checkout would be shorter but does not work here:
+# the repository root *is* the component, and ESP-IDF names a component after
+# its directory, so it would be registered as "esp32c3-asm-template" and
+# "REQUIRES esp32c3_riscv_asm" would fail to resolve.
 #
 # Usage:
 #     ./tools/new-project.sh my_robot
@@ -25,8 +31,9 @@ set -o nounset
 set -o pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMPONENT_DIR="${REPO_ROOT}/components/esp32c3_riscv_asm"
-EXAMPLES_DIR="${COMPONENT_DIR}/examples"
+# The repository root is the component itself.
+COMPONENT_DIR="${REPO_ROOT}"
+EXAMPLES_DIR="${REPO_ROOT}/examples"
 TEMPLATES_DIR="${REPO_ROOT}/templates"
 
 # Namespace used when depending on the published component. Must match the
@@ -118,18 +125,30 @@ if [ -f "${MANIFEST}" ]; then
     if [ "${FROM_REGISTRY}" -eq 1 ]; then
         ok "dependency: ${NAMESPACE}/esp32c3_riscv_asm from the registry"
     else
+        # Copied under the name the registry publishes, so "REQUIRES
+        # esp32c3_riscv_asm" in main/CMakeLists.txt resolves either way and
+        # switching to the published component changes only this manifest.
+        LOCAL_COMPONENT="${TARGET}/components/esp32c3_riscv_asm"
+        mkdir -p "${LOCAL_COMPONENT}"
+        cp "${COMPONENT_DIR}/riscv_asm.S" \
+           "${COMPONENT_DIR}/riscv_asm.h" "${LOCAL_COMPONENT}/"
+        cat > "${LOCAL_COMPONENT}/CMakeLists.txt" <<'EOF'
+idf_component_register(
+    SRCS         "riscv_asm.S"
+    INCLUDE_DIRS "."
+)
+EOF
         cat > "${MANIFEST}" <<EOF
-## Depends on the component in the local checkout, so this project builds
-## without a registry account. Switch to the published component by deleting
-## the override_path line and setting the version you want.
+## The assembly lives in components/esp32c3_riscv_asm inside this project, so
+## nothing has to be downloaded and the sources are yours to edit. To follow
+## the published component instead, delete that directory and add:
+##   ${NAMESPACE}/esp32c3_riscv_asm:
+##     version: "^1.1.0"
 dependencies:
   idf:
     version: ">=5.0"
-  ${NAMESPACE}/esp32c3_riscv_asm:
-    version: "*"
-    override_path: "${COMPONENT_DIR}"
 EOF
-        ok "dependency: local checkout at ${COMPONENT_DIR}"
+        ok "component copied to components/esp32c3_riscv_asm"
     fi
 fi
 

@@ -49,7 +49,7 @@ jobs:
           . "${IDF_PATH}/export.sh" >/dev/null
           # Warnings become errors: a template that ships with warnings
           # teaches people to ignore them.
-          for ex in components/esp32c3_riscv_asm/examples/*/; do
+          for ex in examples/*/; do
             echo "::group::$(basename "${ex}")"
             ( cd "${ex}" \
               && idf.py build -DEXTRA_CFLAGS="-Werror" -DEXTRA_CXXFLAGS="-Werror" \
@@ -70,7 +70,7 @@ jobs:
         shell: bash
         run: |
           . "${IDF_PATH}/export.sh" >/dev/null
-          elf=components/esp32c3_riscv_asm/examples/hello_asm/build/hello_asm.elf
+          elf=examples/hello_asm/build/hello_asm.elf
           # Read the symbol table once, then match against a here-string.
           # "nm | grep -q" looks natural but breaks under "set -o pipefail",
           # which GitHub sets for every bash step: grep -q exits at the first
@@ -95,9 +95,9 @@ jobs:
         with:
           name: firmware
           path: |
-            components/esp32c3_riscv_asm/examples/hello_asm/build/hello_asm.bin
-            components/esp32c3_riscv_asm/examples/hello_asm/build/hello_asm.elf
-            components/esp32c3_riscv_asm/examples/hello_asm/build/hello_asm.map
+            examples/hello_asm/build/hello_asm.bin
+            examples/hello_asm/build/hello_asm.elf
+            examples/hello_asm/build/hello_asm.map
           if-no-files-found: error
 
   # ---------------------------------------------------------------------
@@ -123,7 +123,7 @@ jobs:
           python3 - <<'PY'
           import json, re, sys, pathlib
           failed = False
-          root = pathlib.Path("components/esp32c3_riscv_asm/examples/hello_asm/.vscode")
+          root = pathlib.Path("examples/hello_asm/.vscode")
           for p in sorted(root.glob("*.json")):
               text = p.read_text(encoding="utf8")
               left = re.findall(r"@[A-Z_]+@", text)
@@ -165,7 +165,6 @@ jobs:
         shell: bash
         run: |
           . "${IDF_PATH}/export.sh" >/dev/null
-          cd components/esp32c3_riscv_asm
           compote component pack --name esp32c3_riscv_asm \
                                  --version "$(python3 -c "
           import yaml; print(yaml.safe_load(open('idf_component.yml'))['version'])")"
@@ -174,7 +173,6 @@ jobs:
       - name: The archive must carry the sources and nothing generated
         shell: bash
         run: |
-          cd components/esp32c3_riscv_asm
           archive="$(ls dist/*.tgz)"
           listing="$(tar tzf "${archive}")"
           fail=0
@@ -203,7 +201,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: component-archive
-          path: components/esp32c3_riscv_asm/dist/*.tgz
+          path: dist/*.tgz
 
   # ---------------------------------------------------------------------
   leaks:
@@ -270,7 +268,9 @@ jobs:
       - name: Line endings must be LF
         run: |
           bad=0
-          for f in tools/*.sh main/*.c main/*.h main/*.S; do
+          for f in tools/*.sh riscv_asm.S riscv_asm.h \
+                   examples/*/main/* templates/*/main/*; do
+            [ -f "$f" ] || continue
             if grep -qU $'\r' "$f"; then echo "  CRLF  $f"; bad=1; else echo "  ok   $f"; fi
           done
           exit "$bad"

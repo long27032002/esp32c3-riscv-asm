@@ -15,7 +15,7 @@ Or build it from a clone of the repository, where the local component is used
 instead of the published one:
 
 ```bash
-cd components/esp32c3_riscv_asm/examples/hello_asm
+cd examples/hello_asm
 idf.py build
 ```
 

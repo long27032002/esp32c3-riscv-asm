@@ -1,0 +1,7 @@
+## The example is self-contained: components/riscv next to it holds the
+## assembly, and that directory travels with the example whether it comes
+## from a git clone or from create-project-from-example. So there is no
+## registry dependency to declare here, and the example builds offline.
+dependencies:
+  idf:
+    version: ">=5.0"

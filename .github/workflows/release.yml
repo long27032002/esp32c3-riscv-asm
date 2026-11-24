@@ -36,7 +36,6 @@ permissions:
   contents: read
 
 env:
-  COMPONENT_DIR: components/esp32c3_riscv_asm
   COMPONENT_NAME: esp32c3_riscv_asm
   # compote defaults to the "espressif" namespace, which nobody else can
   # upload to, so it must be given explicitly. Defaults to the GitHub owner,
@@ -66,7 +65,7 @@ jobs:
 
           manifest="$(python3 -c "
           import yaml
-          print(yaml.safe_load(open('${COMPONENT_DIR}/idf_component.yml'))['version'])")"
+          print(yaml.safe_load(open('idf_component.yml'))['version'])")"
           echo "manifest version: ${manifest}"
 
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
@@ -89,7 +88,6 @@ jobs:
         shell: bash
         run: |
           . "${IDF_PATH}/export.sh" >/dev/null
-          cd "${COMPONENT_DIR}"
           compote component pack --name "${COMPONENT_NAME}" --version "${VERSION}"
           ls -la dist/
 
@@ -100,7 +98,6 @@ jobs:
       - name: The archive must contain what the registry displays
         shell: bash
         run: |
-          cd "${COMPONENT_DIR}"
           listing="$(tar tzf dist/*.tgz)"
           fail=0
           for want in ./README.md ./LICENSE \
@@ -148,7 +145,6 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           . "${IDF_PATH}/export.sh" >/dev/null
-          cd "${COMPONENT_DIR}"
 
           # A manual run defaults to a dry run; a tag push publishes.
           echo "namespace: ${COMPONENT_NAMESPACE}"
@@ -182,5 +178,5 @@ jobs:
         if: always()
         with:
           name: component-archive
-          path: ${{ env.COMPONENT_DIR }}/dist/*.tgz
+          path: dist/*.tgz
           if-no-files-found: warn

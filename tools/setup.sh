@@ -32,7 +32,7 @@ TEMPLATE_DIR="${REPO_ROOT}/tools/templates"
 # The repository root is a component, not a project, so there is nothing to
 # debug here. Default to the bundled example; --project points at any other
 # project, such as one made by tools/new-project.sh.
-DEFAULT_PROJECT="${REPO_ROOT}/components/esp32c3_riscv_asm/examples/hello_asm"
+DEFAULT_PROJECT="${REPO_ROOT}/examples/hello_asm"
 PROJECT_DIR="${DEFAULT_PROJECT}"
 
 # Values substituted into the templates.
