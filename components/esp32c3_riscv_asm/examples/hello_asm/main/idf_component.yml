@@ -1,7 +1,17 @@
-## Used only when this example is fetched from the registry: the component
-## manager downloads the dependency named here. Building from a git clone
-## takes the local component instead, through EXTRA_COMPONENT_DIRS in the
-## project CMakeLists, so no namespace is hardcoded for local development.
+## Declares the dependency so the example works when it is fetched on its own:
+##     idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.0.0:hello_asm"
+## In that case the component manager downloads the component into
+## managed_components/.
+##
+## Building from a git clone instead, the project CMakeLists puts the local
+## components/ directory on EXTRA_COMPONENT_DIRS, and that copy wins, so the
+## checkout you are editing is the one that gets compiled.
+##
+## REQUIRES in main/CMakeLists.txt uses the short name esp32c3_riscv_asm in
+## both cases: ESP-IDF accepts it even though a managed component lands in
+## managed_components/long27032002__esp32c3_riscv_asm.
 dependencies:
   idf:
     version: ">=5.0"
+  long27032002/esp32c3_riscv_asm:
+    version: "^1.0.0"
