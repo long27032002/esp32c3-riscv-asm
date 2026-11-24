@@ -11,13 +11,13 @@ that needs to drop below C.
 ## Install
 
 ```bash
-idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.0.1"
+idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.0.2"
 ```
 
 Or run the worked example without writing anything first:
 
 ```bash
-idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.0.1:hello_asm"
+idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.0.2:hello_asm"
 cd hello_asm
 idf.py set-target esp32c3
 idf.py -p <PORT> flash monitor

@@ -1,5 +1,5 @@
 ## Declares the dependency so the example works when it is fetched on its own:
-##     idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.0.0:hello_asm"
+##     idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.0.2:hello_asm"
 ## In that case the component manager downloads the component into
 ## managed_components/.
 ##
@@ -14,4 +14,4 @@ dependencies:
   idf:
     version: ">=5.0"
   long27032002/esp32c3_riscv_asm:
-    version: "^1.0.0"
+    version: "^1.0.2"

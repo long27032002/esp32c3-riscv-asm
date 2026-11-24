@@ -93,6 +93,33 @@ jobs:
           compote component pack --name "${COMPONENT_NAME}" --version "${VERSION}"
           ls -la dist/
 
+      # Publishing a version is permanent, so refuse to publish an archive
+      # that would produce a blank page on the registry. 1.0.0 and 1.0.1 both
+      # went out without a README because the files were added to the
+      # repository after the publish had already run; the build never
+      # complained, because a component compiles fine without one.
+      - name: The archive must contain what the registry displays
+        shell: bash
+        run: |
+          cd "${COMPONENT_DIR}"
+          listing="$(tar tzf dist/*.tgz)"
+          fail=0
+          for want in ./README.md ./LICENSE ./CHANGELOG.md \
+                      ./CMakeLists.txt ./include/riscv_asm.h ./asm/riscv_asm.S; do
+            if grep -qx -- "${want}" <<< "${listing}"; then
+              echo "  ok      ${want}"
+            else
+              echo "  MISSING ${want}"
+              fail=1
+            fi
+          done
+          if [ "${fail}" -ne 0 ]; then
+            echo
+            echo "Refusing to publish: the registry page would be incomplete,"
+            echo "and this version number can never be reused."
+          fi
+          exit "${fail}"
+
       # A dry run needs no credentials: the registry validates an anonymous
       # archive and answers "Uploaded archive is valid". Only a real publish
       # needs the token, so requiring it earlier would block the very check
