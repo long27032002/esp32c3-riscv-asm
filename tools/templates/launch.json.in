@@ -51,19 +51,29 @@
             "cwd": "${workspaceFolder}",
             "openGdbConsole": true,
             "initialBreakpoint": "@INITIAL_BREAKPOINT@",
+            // Two things about this list are not obvious.
+            //
+            // It MUST contain a "target remote" line. The extension keeps a
+            // configured list only if one of its entries starts with
+            // "target"; otherwise it throws the whole list away and uses its
+            // own defaults, which include "monitor reset halt". QEMU's gdb
+            // stub has no such monitor command - it answers "unknown command:
+            // 'reset'" - and the defaults connect on their own, so a
+            // connectCommands block here would then connect a SECOND time and
+            // fail with "A program is being debugged already", followed by
+            // "could not connect: Connection timed out".
+            //
+            // No reset command is needed in the first place: QEMU holds the
+            // CPU at the reset vector until a debugger attaches.
             "initCommands": [
                 "set remotetimeout 20",
-                "set print pretty on"
+                "set print pretty on",
+                "target remote localhost:3333",
+                "maintenance flush register-cache"
             ],
             "target": {
-                "connectCommands": [
-                    "set remotetimeout 20",
-                    // QEMU holds the CPU at the reset vector until a debugger
-                    // connects, so no "monitor reset halt" is needed - and
-                    // QEMU's gdbstub would reject it: monitor commands there
-                    // are QEMU's own, not OpenOCD's.
-                    "target remote localhost:3333"
-                ]
+                "host": "localhost",
+                "port": "3333"
             }
         },
         {
