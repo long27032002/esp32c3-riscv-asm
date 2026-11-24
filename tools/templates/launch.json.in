@@ -46,6 +46,20 @@
             "request": "attach",
             "preLaunchTask": "qemu (gdb server)",
             "runOpenOCD": false,
+            // The ESP-IDF extension gates three things on OpenOCD before a
+            // session starts - starting it, checking it is up, and requiring
+            // OPENOCD_SCRIPTS - and skips all three when the session is
+            // marked as QEMU's:
+            //
+            //     sessionID !== "qemu.debug.session" && runOpenOCD !== false
+            //
+            // runOpenOCD: false above is already enough, but the two are
+            // independent and this is the extension's own marker for a QEMU
+            // session, so declare it as well. Without either, the session
+            // fails with "OPENOCD_SCRIPTS environment variable is missing"
+            // and "OpenOCD is not running", neither of which has anything to
+            // do with the emulator.
+            "sessionID": "qemu.debug.session",
             "gdb": "@GDB_BIN@",
             "program": "${workspaceFolder}/build-qemu/@PROJECT_NAME@.elf",
             "cwd": "${workspaceFolder}",
