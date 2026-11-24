@@ -15,9 +15,17 @@ OUTPUT_LANGUAGE        = English
 
 # Both READMEs are listed so the language-switch link between them resolves;
 # leaving one out makes Doxygen warn about an unresolvable \ref.
-INPUT                  = main README.en.md README.md
-USE_MDFILE_AS_MAINPAGE = README.en.md
+INPUT                  = components/esp32c3_riscv_asm/include \
+                         components/esp32c3_riscv_asm/asm \
+                         components/esp32c3_riscv_asm/examples \
+                         README.md README.vi.md
+
+# templates/ is deliberately left out: those files carry @PLACEHOLDER@ markers
+# that tools/new-project.sh substitutes, and Doxygen reads a leading @ as the
+# start of a command ("Found unknown command '@PROJECT_NAME'").
+USE_MDFILE_AS_MAINPAGE = README.md
 RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */build/* */managed_components/*
 
 # Doxygen has no assembly parser. Mapping .S to the C parser is what makes the
 # /** ... */ blocks in the .S files show up in the generated documentation.

@@ -1,0 +1,46 @@
+## Manifest for the ESP Component Registry (components.espressif.com).
+##
+## Publish with:
+##     compote component pack --name esp32c3_riscv_asm      # build the archive
+##     compote component upload --name esp32c3_riscv_asm    # needs a token
+##
+## CI packs the component on every push to prove the manifest is valid, and
+## uploads only when a v* tag is pushed and the token secret is present.
+
+version: "1.0.0"
+description: >-
+  RISC-V (RV32IMC) assembly routines for the ESP32-C3, documented with Doxygen
+  and callable from C. Includes a VS Code debug setup with MEMORY and xRTOS
+  panels, automated environment setup for Linux, macOS and Windows, and a
+  worked example.
+url: https://github.com/long27032002/esp32c3-riscv-asm
+repository: https://github.com/long27032002/esp32c3-riscv-asm.git
+documentation: https://github.com/long27032002/esp32c3-riscv-asm#readme
+issues: https://github.com/long27032002/esp32c3-riscv-asm/issues
+license: MIT
+
+tags:
+  - riscv
+  - assembly
+  - esp32c3
+  - education
+  - debugging
+
+dependencies:
+  idf:
+    version: ">=5.0"
+
+## Only the ESP32-C3 has this exact register layout and the custom
+## performance-counter CSRs used here.
+targets:
+  - esp32c3
+
+## Keep the archive to what a consumer actually needs.
+files:
+  exclude:
+    - "examples/**/build/**/*"
+    - "docs/**/*"
+    - ".github/**/*"
+    - "tools/**/*"
+    - "**/.vscode/*"
+    - "Doxyfile*"

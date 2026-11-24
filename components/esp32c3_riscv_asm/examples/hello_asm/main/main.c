@@ -19,7 +19,7 @@
 #include "freertos/task.h"
 #include "esp_heap_caps.h"
 
-#include "asm_api.h"
+#include "riscv_asm.h"
 
 /** @brief On-board LED of the ESP32-C3 SuperMini; active low (0 = lit). */
 #define LED_GPIO            8
