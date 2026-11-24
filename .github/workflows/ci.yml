@@ -285,6 +285,20 @@ jobs:
             echo "  MISSING hello_asm in the examples archive"; fail=1
           fi
 
+          # A built example would otherwise ship its build directory: 1939 of
+          # 1956 entries, the one time it was measured. CI checks out a clean
+          # tree so it never reproduces that on its own - this guard is here
+          # for the manifest's exclude list, not for the runner.
+          ex_junk="$(grep -E '/(build|build-qemu|managed_components|\.vscode)/' \
+                     <<< "${ex}" || true)"
+          if [ -n "${ex_junk}" ]; then
+            echo "  generated files leaked into the examples archive:"
+            printf '%s\n' "${ex_junk}" | head -5 | sed 's/^/    /'
+            fail=1
+          else
+            echo "  ok      no generated files in the examples archive"
+          fi
+
           junk="$(grep -E '(^|/)(build|managed_components|\.vscode)/' \
                   <<< "${listing}" || true)"
           if [ -n "${junk}" ]; then

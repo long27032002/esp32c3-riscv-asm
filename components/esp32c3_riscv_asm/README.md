@@ -9,7 +9,7 @@ meant to be read as much as used.
 ## Install
 
 ```bash
-idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.1.0"
+idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.2.0"
 ```
 
 ## Use
@@ -39,7 +39,7 @@ Full reference: [`riscv_asm.h`](riscv_asm.h).
 ## Example
 
 ```bash
-idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.1.0:hello_asm"
+idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.2.0:hello_asm"
 ```
 
 It exercises the routines, measures how many cycles each costs, and includes

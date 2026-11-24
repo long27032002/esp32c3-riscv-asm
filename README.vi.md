@@ -72,7 +72,7 @@ Có hai đường vào, tùy bạn muốn *dùng* các hàm này hay *phát tri�
 ### A. Thêm component vào dự án của bạn
 
 ```bash
-idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.1.0"
+idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.2.0"
 ```
 
 ```c
@@ -408,7 +408,7 @@ idf.py set-target esp32c3 && idf.py build
 Hoặc bắt đầu thẳng từ registry, không cần clone:
 
 ```bash
-idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.1.0:hello_asm"
+idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.2.0:hello_asm"
 ```
 
 ### Tự viết một hàm hợp ngữ
@@ -492,6 +492,8 @@ là cách tài liệu tham chiếu mục ruỗng dần.
 | QEMU: `Failed to bind socket`, hoặc debugger không kết nối được | OpenOCD hoặc một QEMU cũ đang giữ 3333. `pkill -x openocd; pkill -f '[q]emu-system-riscv32'`. Lưu ý `pkill -x qemu-system-riscv32` không khớp gì cả: `/proc/PID/comm` cắt tên còn 15 ký tự. |
 | QEMU khởi động, in bootloader rồi im | Console đang ở USB-Serial-JTAG, QEMU không mô phỏng. Dùng `tools/qemu.sh`, nó nạp thêm `sdkconfig.qemu`. |
 | QEMU: `libslirp.so.0: cannot open shared object file` | Cài libslirp (Debian và Ubuntu: `libslirp0`). |
+| `Errors exist after running preLaunchTask 'qemu (gdb server)'` | Không phải lỗi của task. Sau preLaunchTask, VS Code tìm error marker ở **bất kỳ đâu** rồi mới hỏi, nên chỉ cần IntelliSense kêu ca về một file ESP-IDF đang mở là đủ chặn F5. Cấu hình sinh ra đặt `debug.onTaskErrors` thành `debugAnyway`; sinh lại bằng `tools/setup.sh`. |
+| `cannot open source file "soc/soc.h"` và tương tự | IntelliSense không tìm thấy `compile_commands.json`. Phiên QEMU build vào `build-qemu/`, phiên board build vào `build/`; cấu hình sinh ra khai cả hai. Sinh lại bằng `tools/setup.sh`, và build ít nhất một lần. |
 | `"monitor" command not supported by this target.` | Một cấu hình dành cho board chạy khi không có OpenOCD: kết nối hỏng, rồi các lệnh sau-kết-nối chạy trên phiên chưa kết nối. Thường là do đang mở **gốc repo** trong VS Code thay vì thư mục project — `.vscode/launch.json` cũ ở đó chào mời các cấu hình board trỏ vào một ELF không còn tồn tại. Hãy mở `examples/hello_asm`; `tools/setup.sh` sẽ xoá các file cũ ở gốc. |
 | Panel Registers chỉ hiện `Could not fetch register "h…"` | QEMU khai cả những CSR nó không phục vụ, và chỉ một lần từ chối là hỏng cả lệnh. Sinh lại bằng `tools/setup.sh`, nó trỏ gdb sang một mô tả thanh ghi rút gọn. |
 | Debug console của QEMU hiện `unknown command: 'reset'` | Vô hại. Extension tự chèn `monitor reset halt`; gdbstub của QEMU không có lệnh đó, mà kết nối thì đã lên rồi. Cũng chẳng cần reset — QEMU giữ CPU ở reset vector tới khi debugger gắn vào. |
