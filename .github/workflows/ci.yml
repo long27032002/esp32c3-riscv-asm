@@ -9,7 +9,8 @@
 # What CI does cover is everything that fails silently when a change looks
 # harmless:
 #
-#   build       the firmware still compiles, with warnings treated as errors
+#   build       every example still compiles, with warnings treated as errors
+#   component   the component packs cleanly for the ESP Component Registry
 #   generate    tools/setup.sh still produces valid VS Code configuration
 #   leaks       no machine path, board serial number or key is committed
 #   docs        Doxygen builds both languages with zero warnings
@@ -33,7 +34,7 @@ permissions:
 jobs:
   # ---------------------------------------------------------------------
   build:
-    name: Build firmware (ESP-IDF v5.3.5)
+    name: Build examples (ESP-IDF v5.3.5)
     runs-on: ubuntu-latest
     # Espressif's official image: ESP-IDF, the RISC-V toolchain, OpenOCD and
     # the python environment are already installed and IDF_PATH is set.
@@ -42,25 +43,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build
+      - name: Build every example
         shell: bash
         run: |
           . "${IDF_PATH}/export.sh" >/dev/null
           # Warnings become errors: a template that ships with warnings
           # teaches people to ignore them.
-          idf.py build -DEXTRA_CFLAGS="-Werror" -DEXTRA_CXXFLAGS="-Werror"
+          for ex in components/esp32c3_riscv_asm/examples/*/; do
+            echo "::group::$(basename "${ex}")"
+            ( cd "${ex}" \
+              && idf.py build -DEXTRA_CFLAGS="-Werror" -DEXTRA_CXXFLAGS="-Werror" \
+              && idf.py size )
+            echo "::endgroup::"
+          done
 
-      - name: Report binary size
+      - name: A new project from the blank template must build too
         shell: bash
         run: |
           . "${IDF_PATH}/export.sh" >/dev/null
-          idf.py size
+          # The skeleton people start from is as much a deliverable as the
+          # examples, and it is the one nobody notices when it breaks.
+          ./tools/new-project.sh ci_smoke --dir "${RUNNER_TEMP}"
+          ( cd "${RUNNER_TEMP}/ci_smoke" && idf.py build )
 
       - name: Check the assembly symbols really made it into the image
         shell: bash
         run: |
           . "${IDF_PATH}/export.sh" >/dev/null
-          elf=build/esp32c3_asm_template.elf
+          elf=components/esp32c3_riscv_asm/examples/hello_asm/build/hello_asm.elf
           # Read the symbol table once, then match against a here-string.
           # "nm | grep -q" looks natural but breaks under "set -o pipefail",
           # which GitHub sets for every bash step: grep -q exits at the first
@@ -85,9 +95,9 @@ jobs:
         with:
           name: firmware
           path: |
-            build/esp32c3_asm_template.bin
-            build/esp32c3_asm_template.elf
-            build/esp32c3_asm_template.map
+            components/esp32c3_riscv_asm/examples/hello_asm/build/hello_asm.bin
+            components/esp32c3_riscv_asm/examples/hello_asm/build/hello_asm.elf
+            components/esp32c3_riscv_asm/examples/hello_asm/build/hello_asm.map
           if-no-files-found: error
 
   # ---------------------------------------------------------------------
@@ -113,7 +123,8 @@ jobs:
           python3 - <<'PY'
           import json, re, sys, pathlib
           failed = False
-          for p in sorted(pathlib.Path(".vscode").glob("*.json")):
+          root = pathlib.Path("components/esp32c3_riscv_asm/examples/hello_asm/.vscode")
+          for p in sorted(root.glob("*.json")):
               text = p.read_text(encoding="utf8")
               left = re.findall(r"@[A-Z_]+@", text)
               if left:
@@ -140,6 +151,55 @@ jobs:
             exit 1
           fi
           echo "  ok   .gitignore still covers the generated files"
+
+  # ---------------------------------------------------------------------
+  component:
+    name: Component packs for the registry
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.3.5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: compote pack
+        shell: bash
+        run: |
+          . "${IDF_PATH}/export.sh" >/dev/null
+          cd components/esp32c3_riscv_asm
+          compote component pack --name esp32c3_riscv_asm \
+                                 --version "$(python3 -c "
+          import yaml; print(yaml.safe_load(open('idf_component.yml'))['version'])")"
+          ls -la dist/
+
+      - name: The archive must carry the sources and nothing generated
+        shell: bash
+        run: |
+          cd components/esp32c3_riscv_asm
+          archive="$(ls dist/*.tgz)"
+          listing="$(tar tzf "${archive}")"
+          fail=0
+          for want in ./CMakeLists.txt ./include/riscv_asm.h ./asm/riscv_asm.S; do
+            if grep -qx -- "${want}" <<< "${listing}"; then
+              echo "  ok      ${want}"
+            else
+              echo "  MISSING ${want}"; fail=1
+            fi
+          done
+          junk="$(grep -E '(^|/)(build|managed_components|\.vscode)/' \
+                  <<< "${listing}" || true)"
+          if [ -n "${junk}" ]; then
+            echo "  generated files leaked into the archive:"
+            printf '%s\n' "${junk}" | sed 's/^/    /'
+            fail=1
+          else
+            echo "  ok      no generated files in the archive"
+          fi
+          exit "${fail}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: component-archive
+          path: components/esp32c3_riscv_asm/dist/*.tgz
 
   # ---------------------------------------------------------------------
   leaks:

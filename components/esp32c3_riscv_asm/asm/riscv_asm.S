@@ -1,5 +1,5 @@
 /**
- * @file    asm_template.S
+ * @file    riscv_asm.S
  * @brief   Reference template for RISC-V (RV32IMC) assembly on the ESP32-C3.
  *
  * Use this file as the starting point for new assembly routines. It shows the

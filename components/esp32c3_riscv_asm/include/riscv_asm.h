@@ -1,5 +1,5 @@
 /**
- * @file    asm_api.h
+ * @file    riscv_asm.h
  * @brief   C-callable interface to the RISC-V assembly routines.
  *
  * Every routine declared here is implemented in assembly (`*.S`) and follows

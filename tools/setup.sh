@@ -18,20 +18,30 @@
 #   ./tools/setup.sh --no-install    never install anything, only configure
 #   ./tools/setup.sh --idf-path DIR  use this ESP-IDF instead of searching
 #   ./tools/setup.sh --port DEV      use this serial port instead of detecting
+#   ./tools/setup.sh --project DIR   configure this project instead of the
+#                                    bundled example
+#   ./tools/setup.sh --breakpoint S  stop at this symbol instead of app_main
 #
 set -o errexit
 set -o nounset
 set -o pipefail
 
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TEMPLATE_DIR="${PROJECT_DIR}/tools/templates"
-VSCODE_DIR="${PROJECT_DIR}/.vscode"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TEMPLATE_DIR="${REPO_ROOT}/tools/templates"
+
+# The repository root is a component, not a project, so there is nothing to
+# debug here. Default to the bundled example; --project points at any other
+# project, such as one made by tools/new-project.sh.
+DEFAULT_PROJECT="${REPO_ROOT}/components/esp32c3_riscv_asm/examples/hello_asm"
+PROJECT_DIR="${DEFAULT_PROJECT}"
 
 # Values substituted into the templates.
 TARGET="esp32c3"
 OPENOCD_CFG="board/esp32c3-builtin.cfg"
-PROJECT_NAME="esp32c3_asm_template"
-INITIAL_BREAKPOINT="sum_loop"
+# Where the debugger stops first. The bundled example aims at the assembly
+# loop, which is the point of it; any other project gets app_main, the only
+# symbol every ESP-IDF project is guaranteed to have.
+INITIAL_BREAKPOINT=""
 
 MODE="setup"
 ARG_IDF_PATH=""
@@ -69,6 +79,9 @@ while [ $# -gt 0 ]; do
         --no-install) ALLOW_INSTALL=0 ;;
         --idf-path)   ARG_IDF_PATH="${2:-}"; shift ;;
         --port)       ARG_PORT="${2:-}"; shift ;;
+        --project)    PROJECT_DIR="$(cd "${2:-}" 2>/dev/null && pwd)" \
+                          || die "no such directory: ${2:-}"; shift ;;
+        --breakpoint) INITIAL_BREAKPOINT="${2:-}"; shift ;;
         -h|--help)    sed -n '2,25p' "${BASH_SOURCE[0]}" | sed 's/^# \?//'; exit 0 ;;
         *)            die "unknown option: $1" ;;
     esac
@@ -77,6 +90,27 @@ done
 
 printf '%s\n' "${C_B}ESP32-C3 assembly template - environment setup${C_0}"
 info "project: ${PROJECT_DIR}"
+[ "${PROJECT_DIR}" = "${DEFAULT_PROJECT}" ] \
+    && info "(the bundled example; use --project DIR for your own)"
+
+[ -f "${PROJECT_DIR}/CMakeLists.txt" ] \
+    || die "${PROJECT_DIR} is not an ESP-IDF project: no CMakeLists.txt"
+
+# The debugger needs the ELF name, which CMake takes from project().
+PROJECT_NAME="$(sed -n 's/^[[:space:]]*project(\([A-Za-z0-9_]*\)).*/\1/p' \
+                "${PROJECT_DIR}/CMakeLists.txt" | head -1)"
+[ -n "${PROJECT_NAME}" ] \
+    || die "could not read project() name from ${PROJECT_DIR}/CMakeLists.txt"
+
+if [ -z "${INITIAL_BREAKPOINT}" ]; then
+    if [ "${PROJECT_DIR}" = "${DEFAULT_PROJECT}" ]; then
+        INITIAL_BREAKPOINT="sum_loop"
+    else
+        INITIAL_BREAKPOINT="app_main"
+    fi
+fi
+
+VSCODE_DIR="${PROJECT_DIR}/.vscode"
 [ "${MODE}" = "check" ] && info "check mode: nothing will be modified"
 
 # ------------------------------------------------------- 1. prerequisites ---
@@ -327,8 +361,8 @@ fi
 # "git add -f" would defeat that, so install a pre-commit hook as a second
 # line of defence. Never overwrite a hook the user already has.
 step "Installing the pre-commit guard"
-HOOK_DIR="${PROJECT_DIR}/.git/hooks"
-if [ ! -d "${PROJECT_DIR}/.git" ]; then
+HOOK_DIR="${REPO_ROOT}/.git/hooks"
+if [ ! -d "${REPO_ROOT}/.git" ]; then
     info "not a git repository, skipping"
 elif [ "${MODE}" = "check" ]; then
     info "check mode: skipping"
@@ -352,7 +386,7 @@ step "Done"
 cat <<EOF
     Next steps:
 
-      1. Open THIS folder in VS Code (not its parent):
+      1. Open the PROJECT folder in VS Code (not the repository root):
              code "${PROJECT_DIR}"
       2. Build:  Ctrl+Shift+B
       3. Flash and watch the console:

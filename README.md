@@ -1,44 +1,89 @@
 # ESP32-C3 RISC-V Assembly Template
 
-[English](README.en.md) · **Tiếng Việt**
+**English** · [Tiếng Việt](README.vi.md)
 
 [![CI](https://github.com/long27032002/esp32c3-riscv-asm/actions/workflows/ci.yml/badge.svg)](https://github.com/long27032002/esp32c3-riscv-asm/actions/workflows/ci.yml)
 
-Bộ khung để **học, nghiên cứu và phát triển** chương trình hợp ngữ RISC-V
-(RV32IMC) trên ESP32-C3, kèm script cài đặt tự động và môi trường debug đầy đủ
-trong VS Code.
+An ESP-IDF **component** of RISC-V (RV32IMC) assembly routines for the
+ESP32-C3, plus the tooling to develop with them: a worked example, a blank
+project skeleton, automated environment setup and a VS Code debug
+configuration with MEMORY and xRTOS panels.
 
-Mã nguồn chú thích bằng **tiếng Anh theo chuẩn Doxygen**; tài liệu hướng dẫn
-bằng tiếng Việt.
+All source comments follow **Doxygen in English**.
+
+## Quick start
+
+Pick whichever fits what you are doing.
+
+```bash
+# 1. Run the worked example, straight from the registry
+idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.0.0:hello_asm"
+
+# 2. Add the routines to a project you already have
+idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.0.0"
+
+# 3. Start something new, from a clone of this repository
+git clone https://github.com/long27032002/esp32c3-riscv-asm.git
+cd esp32c3-riscv-asm && ./tools/setup.sh
+./tools/new-project.sh my_robot
+```
+
+Then in your code:
+
+```c
+#include "riscv_asm.h"
+
+uint32_t total = asm_sum_loop(55);     /* 1540 */
+asm_gpio_output_init(8);
+asm_gpio_clear(8);                     /* LED on, active low */
+```
+
+## Layout
+
+```
+components/esp32c3_riscv_asm/     the component, published to the registry
+├── include/riscv_asm.h           public API, documented
+├── asm/riscv_asm.S               the assembly
+├── idf_component.yml             manifest
+└── examples/hello_asm/           complete example project
+
+templates/blank_asm/              skeleton for tools/new-project.sh
+tools/                            setup, project creation, docs, recovery
+```
+
+The repository root is **not** a project: the component is, and complete
+projects live under `examples/` and wherever `new-project.sh` puts them.
 
 ---
 
-## Có sẵn những gì
+## What you get
 
-| Thành phần | Nội dung |
+| Component | Contents |
 |---|---|
-| `main/asm_template.S` | Khung mẫu hợp ngữ: hàm lá, hàm có ngăn xếp, GPIO qua thanh ghi thô, đọc CSR |
-| `main/asm_api.h` | Khai báo C cho mọi hàm assembly, tài liệu Doxygen đầy đủ |
-| `main/main.c` | Gọi thử, tự kiểm tra kết quả, tạo 3 task FreeRTOS |
-| `tools/setup.sh` | Cài đặt và cấu hình tự động cho Linux / macOS |
-| `tools/setup.bat` + `setup.ps1` | Bản tương ứng cho Windows |
-| `tools/recover-jtag.sh` | Gỡ JTAG bị kẹt, tự dò python ESP-IDF và cổng serial |
-| `tools/recover-jtag.ps1` + `.bat` | Bản Windows của recover-jtag |
-| `tools/check-release.sh` | Quét đường dẫn máy, số serial, khoá — chạy trước khi public |
-| `.gitattributes` | Khoá kết thúc dòng: `.sh` luôn LF, `.bat`/`.ps1` luôn CRLF |
-| `.vscode/` | Do script sinh ra: build, flash, debug, panel MEMORY và xRTOS |
-| `Doxyfile` + `Doxyfile.vi` | Sinh tài liệu HTML hai thứ tiếng, **đọc được cả file `.S`** |
-| `tools/build-docs.sh` | Dựng cả hai bản và trang chọn ngôn ngữ |
+| `components/esp32c3_riscv_asm/` | The component: arithmetic, GPIO through raw registers, CSR reads |
+| `components/.../include/riscv_asm.h` | Public API, fully documented |
+| `components/.../asm/riscv_asm.S` | Reference assembly: leaf routine, stack-frame routine, peripheral access |
+| `components/.../examples/hello_asm/` | Worked example, self-checking, three FreeRTOS tasks |
+| `templates/blank_asm/` | Minimal skeleton: one C file, one `.S` file, component wired in |
+| `tools/new-project.sh` | Creates a project from the skeleton or any example |
+| `tools/setup.sh` | Environment setup for Linux and macOS |
+| `tools/setup.bat` + `setup.ps1` | Setup for Windows |
+| `tools/recover-jtag.sh` + `.ps1` + `.bat` | Unstick a wedged JTAG |
+| `tools/check-release.sh` | Scans for machine paths, serial numbers and keys |
+| `tools/build-docs.sh` | Builds the documentation in both languages |
+| `Doxyfile` + `Doxyfile.vi` | English and Vietnamese documentation |
+| `.gitattributes` | Pins line endings: `.sh` LF, `.bat`/`.ps1` CRLF |
 
-Chương trình mẫu khi chạy sẽ:
+The example program:
 
-1. đọc `misa` bằng assembly để nhận dạng lõi;
-2. tính tổng 1..55 bằng **vòng lặp** và bằng **công thức Gauss**, tự kiểm tra;
-3. đo **số chu kỳ CPU** của hai cách bằng bộ đếm hiệu năng;
-4. ghi một bảng 8 word trong RAM để xem bằng **MEMORY view**;
-5. tạo 3 task FreeRTOS để xem bằng **xRTOS view**.
+1. reads `misa` from assembly to identify the core;
+2. computes 1..55 with a **loop** and with the **closed-form formula**, then
+   checks itself;
+3. measures the **CPU cycles** of both using the performance counter;
+4. writes an 8-word table in RAM to inspect in the **MEMORY view**;
+5. creates three FreeRTOS tasks to inspect in the **xRTOS view**.
 
-Kết quả thật trên board ESP32-C3 SuperMini:
+Real output from an ESP32-C3 SuperMini:
 
 ```
 [1] misa = 0x40101104  -> C I M U   (MXL=1, 1 means RV32)
@@ -49,19 +94,20 @@ Kết quả thật trên board ESP32-C3 SuperMini:
 [4] g_result_table at 0x3fc8bfc0  <- open the MEMORY view here
 ```
 
-Vòng lặp tốn **322 chu kỳ**, công thức tốn **16** — hơn 20 lần, một ví dụ gọn
-để nói về chi phí thuật toán.
+The loop costs **322 cycles**, the formula **16** — more than 20x, a compact
+example for talking about algorithmic cost rather than instruction cost.
 
 ---
 
-## Cài đặt
+## Setup
 
 ### Linux / macOS
 
 ```bash
 git clone https://github.com/long27032002/esp32c3-riscv-asm.git
 cd esp32c3-riscv-asm
-./tools/setup.sh
+./tools/setup.sh                 # configures the bundled example
+./tools/setup.sh --project DIR   # or any project of your own
 ```
 
 ### Windows
@@ -72,126 +118,133 @@ cd esp32c3-riscv-asm
 tools\setup.bat
 ```
 
-Script sẽ lần lượt:
+The script:
 
-1. kiểm tra **VS Code**, mời cài nếu chưa có (pacman / apt / dnf / brew /
+1. checks for **VS Code** and offers to install it (pacman / apt / dnf / brew /
    winget);
-2. tìm **ESP-IDF**; nếu không có thì mời clone bản v5.3.5 và chạy `install.sh`;
-3. **hỏi chính ESP-IDF** xem toolchain, GDB và OpenOCD nằm ở đâu;
-4. cài 4 extension VS Code: ESP-IDF, C/C++, **memory-view** (tab MEMORY),
-   **rtos-views** (tab xRTOS);
-5. dò cổng serial của board theo **đường dẫn by-id cố định**;
-6. sinh `.vscode/settings.json`, `launch.json`, `tasks.json` rồi **kiểm tra
-   JSON hợp lệ**.
+2. looks for **ESP-IDF**; if none is found it offers to clone v5.3.5 and run
+   `install.sh`;
+3. **asks ESP-IDF itself** where the toolchain, GDB and OpenOCD live;
+4. installs four VS Code extensions: ESP-IDF, C/C++, **memory-view** (MEMORY
+   tab) and **rtos-views** (xRTOS tab);
+5. detects the board's serial port through its **stable by-id path**;
+6. generates `.vscode/settings.json`, `launch.json` and `tasks.json`, then
+   **validates the JSON**.
 
-Tham số hữu ích:
+Useful flags:
 
 ```bash
-./tools/setup.sh --check            # chỉ báo cáo, không sửa gì
-./tools/setup.sh --no-install       # chỉ cấu hình, không cài đặt
+./tools/setup.sh --check            # report only, change nothing
+./tools/setup.sh --no-install       # configure only, never install
 ./tools/setup.sh --idf-path ~/esp/esp-idf
 ./tools/setup.sh --port /dev/ttyACM0
+./tools/setup.sh --project ~/work/my_robot
+./tools/setup.sh --breakpoint app_main
 ```
 
-### Vì sao script hỏi ESP-IDF thay vì tự dò đường dẫn
+### Why the script asks ESP-IDF instead of guessing paths
 
-Dưới `~/.espressif/tools` thường có **nhiều phiên bản** của mỗi công cụ. Chọn
-bản mới nhất theo tên thư mục là cách nhanh nhất để lệch phiên bản giữa
-toolchain, GDB và OpenOCD. Script nạp `export.sh` trong một shell con rồi hỏi
-`command -v`, nên luôn lấy đúng bộ công cụ của chính bản ESP-IDF đang dùng.
+Several versions of each tool usually coexist under `~/.espressif/tools`.
+Picking the newest by directory name is the quickest way to end up with a
+toolchain, a GDB and an OpenOCD that do not belong together. The script sources
+`export.sh` in a subshell and asks `command -v`, so it always gets the tools of
+the ESP-IDF actually in use.
 
 ---
 
-## CI tự động (GitHub Actions)
+## Continuous integration (GitHub Actions)
 
-Mỗi lần push hoặc mở pull request, GitHub chạy 6 job song song. Xem ở tab
-**Actions** của repo, hoặc bấm badge ở đầu trang.
+Every push and pull request runs six jobs in parallel. See the **Actions** tab,
+or click the badge at the top.
 
-| Job | Chạy trên | Kiểm cái gì |
+| Job | Runs on | What it checks |
 |---|---|---|
-| `build` | container `espressif/idf:v5.3.5` | Biên dịch với `-Werror`; in kích thước; kiểm 7 ký hiệu assembly có thật trong ELF; tải lên `.bin`/`.elf`/`.map` |
-| `generate` | container ESP-IDF | Chạy `setup.sh` thật, kiểm JSON sinh ra hợp lệ, **không còn placeholder `@...@`**, và vẫn bị `.gitignore` loại |
-| `leaks` | ubuntu | `check-release.sh`: đường dẫn máy, số serial, khoá |
-| `docs` | ubuntu | Doxygen phải **0 cảnh báo**; tải lên trang HTML |
-| `shell` | ubuntu | `bash -n`, `shellcheck`, và kết thúc dòng phải LF |
-| `windows` | **windows-latest** | Parse `.ps1` bằng chính parser PowerShell; chạy `setup.ps1 -Check` xem có báo lỗi tử tế không; `.bat` phải CRLF |
+| `build` | container `espressif/idf:v5.3.5` | Compiles with `-Werror`; reports size; verifies seven assembly symbols really reached the ELF; uploads `.bin`/`.elf`/`.map` |
+| `generate` | ESP-IDF container | Actually runs `setup.sh`, then checks the generated JSON is valid, has **no `@...@` placeholder left**, and is still ignored by git |
+| `leaks` | ubuntu | `check-release.sh`: machine paths, board serial numbers, keys |
+| `docs` | ubuntu | Doxygen must emit **zero warnings**; uploads the HTML |
+| `shell` | ubuntu | `bash -n`, `shellcheck`, and LF line endings |
+| `windows` | **windows-latest** | Parses the `.ps1` files with the real PowerShell parser; runs `setup.ps1 -Check` to confirm it fails readably; `.bat` must be CRLF |
 
-### CI **không** làm được gì
+### What CI cannot do
 
-Máy ảo GitHub **không có board ESP32-C3 cắm vào**. Nên CI không thể:
+GitHub runners have **no ESP32-C3 attached**, so CI can never:
 
-- nạp firmware, chạy thật, xem LED nháy
-- debug JTAG, đọc thanh ghi, đo số chu kỳ
-- kiểm cổng serial, nút BOOT, loopback UART/SPI
+- flash the firmware, run it, or watch the LED
+- drive JTAG, read registers, or measure cycle counts
+- test the serial port, the BOOT button, or UART/SPI loopback
 
-Những thứ đó vẫn phải làm tay trên board thật. CI chỉ bắt loại lỗi *im lặng*:
-code không biên dịch nữa, script hỏng cú pháp, tài liệu sinh lỗi, hoặc ai đó
-lỡ commit đường dẫn máy mình.
+Those stay manual, on real hardware. CI covers the failures that are *silent*:
+code that no longer compiles, a script with a syntax error, documentation that
+breaks, or someone committing their own machine's paths.
 
-### Vì sao có job `windows`
+### Why there is a `windows` job
 
-Máy phát triển chạy Linux nên không thử được `setup.ps1`, `recover-jtag.ps1`.
-Job này chạy trên Windows thật, ít nhất bảo đảm chúng **parse được** và thất
-bại có thông báo rõ ràng thay vì văng stack trace. Chạy đầy đủ với ESP-IDF và
-board thật thì vẫn cần người dùng Windows thử.
+The development machine runs Linux, so `setup.ps1` and `recover-jtag.ps1` could
+not be exercised there. This job runs on a real Windows host and at least
+guarantees they **parse** and fail with a readable message instead of a stack
+trace. A full run with ESP-IDF and a board still needs a Windows user.
 
-### Chạy lại bằng tay
+### Running it by hand
 
-Tab **Actions** → chọn workflow **CI** → **Run workflow** (nhờ
-`workflow_dispatch`).
+**Actions** tab -> pick the **CI** workflow -> **Run workflow**, thanks to
+`workflow_dispatch`.
 
-## Những thứ không bao giờ nằm trong repo
+## What never enters the repository
 
-Ba thứ sau **chỉ tồn tại trên máy bạn**, `.gitignore` đã loại hẳn. Người clone
-về sẽ không có chúng, và tự sinh ra khi chạy script hoặc build:
+These three exist **only on your machine**; `.gitignore` excludes them. Anyone
+who clones gets none of them and regenerates them by running the script or
+building:
 
-| Mục | Vì sao không commit | Ai tạo ra |
+| Item | Why it is not committed | Created by |
 |---|---|---|
-| `build/` | Kết quả biên dịch, nhúng đường dẫn tuyệt đối của máy build | `idf.py build` |
-| `sdkconfig` | Cấu hình đã nở ra từ `sdkconfig.defaults`, ghim đường dẫn toolchain | lần build đầu |
-| `.vscode/settings.json`, `launch.json`, `tasks.json` | Chứa đường dẫn tuyệt đối và **số serial của một board cụ thể** | `tools/setup.sh` |
+| `build/` | Compiler output; embeds absolute paths of the machine that built it | `idf.py build` |
+| `sdkconfig` | Expanded from `sdkconfig.defaults`, pins toolchain paths | the first build |
+| `.vscode/settings.json`, `launch.json`, `tasks.json` | Absolute paths and the **serial number of one specific board** | `tools/setup.sh` |
 
-Chỉ `sdkconfig.defaults` và `.vscode/extensions.json` được commit — file thứ
-hai chỉ chứa **mã định danh extension**, không có đường dẫn nào, nên VS Code sẽ
-tự mời cài 4 extension cần thiết khi người ta mở thư mục lần đầu.
+Only `sdkconfig.defaults` and `.vscode/extensions.json` are committed. The
+latter holds **extension identifiers only**, no paths, so VS Code offers to
+install the four required extensions the first time someone opens the folder.
 
-### Vì sao `.vscode/settings.json` phải ghi đường dẫn tuyệt đối
+### Why `.vscode/settings.json` must contain absolute paths
 
-Không có cách nào khác. ESP-IDF Extension đọc các giá trị `idf.*` **nguyên
-văn** — nó không hiểu `${env:HOME}` hay bất cứ biến nào (đã kiểm chứng bằng
-cách tìm trong mã nguồn extension: không có chỗ nào xử lý). Thêm nữa, tên thư
-mục công cụ còn mã hoá phiên bản (`16.3_20250913`,
-`v0.12.0-esp32-20251215`), khác nhau theo từng máy kể cả khi cùng hệ điều hành.
+There is no alternative. The ESP-IDF extension reads `idf.*` settings
+**verbatim**: it does not expand `${env:HOME}` or any other variable, as a
+search through the extension source confirms. On top of that, tool directory
+names encode versions (`16.3_20250913`, `v0.12.0-esp32-20251215`) that differ
+between machines even on the same operating system.
 
-Nên lời giải không phải là viết cho "đẹp" mà là **sinh lại trên từng máy**:
-`setup.sh` tạo file, `.gitignore` chặn không cho commit.
+So the answer is not to make the file prettier, but to **regenerate it per
+machine**: `setup.sh` writes it, `.gitignore` keeps it out of the repository.
 
-### Tự kiểm tra trước khi công bố
+### Checking before you publish
 
 ```bash
 ./tools/check-release.sh
 ```
 
-Script kiểm 5 nhóm: file sinh ra bị track, đường dẫn `/home/...` hoặc
-`C:\Users\...`, python env ghi cứng, số serial của board, và khoá/token.
-`setup.sh` cũng cài sẵn **git hook `pre-commit`** gọi script này, nên một lần
-`git add -f` lỡ tay sẽ bị chặn ngay. Muốn bỏ qua một lần:
+It covers five classes: tracked generated files, `/home/...` or `C:\Users\...`
+paths, a hardcoded python environment, a board serial number, and credentials
+or private keys. `setup.sh` also installs a **`pre-commit` git hook** that runs
+it, so one careless `git add -f` is blocked. Bypass once with
 `git commit --no-verify`.
 
-## Dùng hằng ngày
+## Daily use
 
 ```bash
-code .          # mở ĐÚNG thư mục này, không mở thư mục cha
+# Open the PROJECT, not the repository root - the root is a component and
+# has nothing to debug.
+code components/esp32c3_riscv_asm/examples/hello_asm
 ```
 
-| Thao tác | Cách làm |
+| Action | How |
 |---|---|
 | Build | `Ctrl+Shift+B` |
-| Nạp + xem console | Terminal → Run Task → **flash + monitor** |
-| Debug | **F5** (dừng sẵn ở nhãn `sum_loop`) |
-| Sinh tài liệu | Terminal → Run Task → **docs (doxygen, en + vi)** |
+| Flash and watch the console | Terminal → Run Task → **flash + monitor** |
+| Debug | **F5** (stops at the `sum_loop` label) |
+| Generate documentation | Terminal → Run Task → **docs (doxygen, en + vi)** |
 
-Không dùng VS Code:
+Without VS Code:
 
 ```bash
 . ~/esp/esp-idf/export.sh
@@ -199,29 +252,32 @@ idf.py build
 idf.py -p "$(ls /dev/serial/by-id/usb-Espressif*)" flash monitor
 ```
 
-### Khi debug
+### While debugging
 
-- **Registers** trong panel Variables: `t0`, `t1`, `a0` đổi sau mỗi bước
-- **Disassembly**: chuột phải trong `.S` → *Open Disassembly View*, có cột địa chỉ
-- **F11** chạy từng lệnh máy khi cửa sổ Disassembly đang được chọn
-- **Call Stack** liệt kê từng task FreeRTOS theo tên
-- **xRTOS**: bảng task, mức ưu tiên, ngăn xếp còn lại
-- **MEMORY**: bấm **+**, nhập `&g_result_table` hoặc địa chỉ chương trình in ra
-- **Debug Console**: gõ lệnh GDB với tiền tố `-exec`, ví dụ `-exec info threads`
+- **Registers** in the Variables panel: `t0`, `t1`, `a0` change at every step
+- **Disassembly**: right-click in a `.S` file → *Open Disassembly View*; it has
+  an address column
+- **F11** steps one machine instruction when the Disassembly view has focus
+- **Call Stack** lists every FreeRTOS task by name
+- **xRTOS**: task table with priorities and remaining stack
+- **MEMORY**: click **+**, enter `&g_result_table` or the address the program
+  prints
+- **Debug Console**: any GDB command with the `-exec` prefix, for example
+  `-exec info threads`
 
-Có 3 cấu hình debug trong `launch.json`:
+Three debug configurations are provided:
 
-| Cấu hình | Khi nào dùng |
+| Configuration | When to use |
 |---|---|
-| Debug (task starts OpenOCD) | **mặc định**, luôn chạy được |
-| Debug (extension starts OpenOCD) | chỉ sau khi đăng ký ESP-IDF với extension |
-| Debug (OpenOCD already running) | khi bạn tự chạy OpenOCD ở terminal riêng |
+| Debug (task starts OpenOCD) | **default**, always works |
+| Debug (extension starts OpenOCD) | only after registering ESP-IDF with the extension |
+| Debug (OpenOCD already running) | when you start OpenOCD yourself |
 
 ---
 
-## Viết hàm assembly mới
+## Writing a new assembly routine
 
-Chép khung trong `asm_template.S`. Mỗi hàm cần đủ bốn thứ:
+Copy the skeleton from `asm_template.S`. Every routine needs four things:
 
 ```asm
 /**
@@ -239,115 +295,124 @@ my_function:
     .size   my_function, . - my_function
 ```
 
-Rồi khai báo trong `asm_api.h` với khối Doxygen tương ứng, và thêm file `.S`
-vào `main/CMakeLists.txt`.
+Then declare it in `asm_api.h` with a matching Doxygen block, and add the `.S`
+file to `main/CMakeLists.txt`.
 
-### Quy ước của dự án
+### House rules
 
-- Dùng tên thanh ghi theo psABI (`a0`, `t0`, `s0`), không dùng `x10`, `x5`
-- Mọi địa chỉ ngoại vi phải là hằng có tên, **kèm tên header ESP-IDF** lấy ra
-- Hàm có `call` phải mở khung ngăn xếp và cất `ra`
-- `.global` / `.type` / `.size` quanh mọi ký hiệu xuất
-- **Đặt các section dữ liệu ở cuối file**
+- Use psABI register names (`a0`, `t0`, `s0`), not `x10`, `x5`
+- Every peripheral address must be a named constant **with the ESP-IDF header
+  it came from**
+- A routine containing `call` must open a stack frame and save `ra`
+- `.global` / `.type` / `.size` around every exported symbol
+- **Put data sections at the very end of the file**
 
-Điểm cuối cùng là một cái bẫy thật: chỉ thị `.section` có hiệu lực cho tới chỉ
-thị kế tiếp, nên một khối `.data` đặt giữa file sẽ **nuốt mọi hàm viết sau nó**
-— code rơi vào `.data`, nhảy vào đó sinh lỗi *instruction access fault*.
+That last rule is a real trap: a `.section` directive stays in force until the
+next one, so a `.data` block in the middle of a file **swallows every routine
+written after it** — the code lands in `.data`, and jumping to it raises an
+instruction access fault.
 
 ---
 
-## Gặp sự cố
+## Troubleshooting
 
-### OpenOCD báo "Examination failed" hoặc "Unsupported DTM version: -1"
+### OpenOCD reports "Examination failed" or "Unsupported DTM version: -1"
 
-JTAG bị kẹt, thường do một phiên debug bị cắt ngang khi target đang halt.
-**Reset thường không gỡ được** — `hard_reset` chỉ reset CPU. Dùng:
+JTAG is wedged, usually because a debug session was cut off while the target
+was halted. **An ordinary reset does not clear it**: `hard_reset` only restarts
+the CPU. Use:
 
 Terminal → Run Task → **recover JTAG (watchdog reset)**
 
-hoặc:
+or:
 
 ```bash
 ./tools/recover-jtag.sh
 ```
 
-Script tự tìm python của ESP-IDF và cổng serial, không cần nạp môi trường
-trước. Lưu ý `python` của hệ thống **không có** module `esptool`, và tên thư
-mục python env (`idf5.3_py3.14_env`...) khác nhau theo từng máy — đó là lý do
-script phải dò chứ không ghi cứng đường dẫn.
+The script locates the ESP-IDF python and the serial port by itself, with no
+environment to source first. Note that the system `python` does **not** have
+the `esptool` module, and the python environment directory name
+(`idf5.3_py3.14_env`, ...) differs per installation - which is why the script
+detects it instead of hardcoding a path.
 
 ### "couldn't bind ... port 6666: Address already in use"
 
-Còn một OpenOCD cũ. Task **kill stray OpenOCD**, hoặc `pkill -x openocd`.
+A stale OpenOCD is still running. Use the **kill stray OpenOCD** task, or
+`pkill -x openocd`.
 
-Lưu ý task dùng `pkill -x openocd`, khớp theo **tên tiến trình**. Đừng đổi sang
-`pkill -f <đường_dẫn>`: `-f` khớp cả dòng lệnh, mà dòng lệnh của chính shell
-đang chạy task cũng chứa đường dẫn OpenOCD, nên task sẽ tự giết shell của mình
-và chết ngay với terminal trống.
+Note the task uses `pkill -x openocd`, which matches the *process name*. Do not
+switch it to `pkill -f <path>`: `-f` matches whole command lines, and the
+command line of the shell running the task itself contains the OpenOCD path, so
+the task would kill its own shell and die with an empty terminal.
 
-### Script `.sh` báo `env: 'bash\r': No such file or directory`
+### A `.sh` script reports `env: 'bash\r': No such file or directory`
 
-File bị đổi sang kết thúc dòng CRLF — thường do checkout trên Windows với
-`core.autocrlf=true` rồi copy sang Linux/WSL. Nhân hệ điều hành đọc tên trình
-thông dịch thành `bash\r` nên không tìm thấy.
+The file was converted to CRLF line endings, usually by checking it out on
+Windows with `core.autocrlf=true` and then copying it to Linux or WSL. The
+kernel reads the interpreter name as `bash\r` and cannot find it.
 
-`.gitattributes` trong repo đã khoá `.sh` ở LF nên clone mới sẽ không gặp. Nếu
-vẫn dính (ví dụ file đến qua đường zip hay USB):
+`.gitattributes` pins `.sh` files to LF, so a fresh clone is safe. If a copy
+reached you another way, such as a zip or a USB stick:
 
 ```bash
 sed -i 's/\r$//' tools/*.sh
 ```
 
-### Cổng serial đổi tên sau khi reset
+### The serial port name changes after a reset
 
-Board dùng USB tích hợp nên mỗi lần reset nó rời rồi nối lại USB; `ttyACM0` có
-thể thành `ttyACM1`. Cấu hình đã dùng đường dẫn by-id cố định theo số serial.
-Nếu đổi board, chạy lại `./tools/setup.sh`.
+The board uses native USB, so every reset re-enumerates it and `ttyACM0` can
+become `ttyACM1`. The generated configuration uses the stable by-id path keyed
+to the board's serial number. If you swap boards, re-run `./tools/setup.sh`.
 
-### Extension báo "OPENOCD_SCRIPTS environment variable is missing"
+### The extension reports "OPENOCD_SCRIPTS environment variable is missing"
 
-Chỉ xảy ra với cấu hình *Debug (extension starts OpenOCD)*. Extension không đọc
-`OPENOCD_SCRIPTS` thẳng từ settings; nó lấy từ môi trường tính sẵn khi bạn chọn
-một bản ESP-IDF trong extension (lưu ở `~/.espressif/esp_idf.json`). Dùng cấu
-hình mặc định, hoặc đăng ký bản ESP-IDF: `F1` → *ESP-IDF: Configure ESP-IDF
-extension* → **USE EXISTING SETUP**.
-
----
-
-## Phần cứng
-
-Mặc định cho **ESP32-C3 SuperMini** (chỉ một cổng USB-C, USB-Serial-JTAG tích
-hợp, `303a:1001`):
-
-- LED trên board: **GPIO8**, **tích cực mức thấp** (ghi 0 = sáng)
-- Nút BOOT: **GPIO9**, tích cực mức thấp
-- **GPIO18/19 là USB** — cấu hình lại sẽ mất kết nối
-- GPIO0–7, 10 rảnh cho bài lab; board **không có sẵn** LED ở các chân này
-
-Board khác: sửa `LED_GPIO` trong `main.c`. Nếu LED ngoài mắc chân → 330 Ω →
-GND thì nó **tích cực mức cao**, cần đổi `asm_gpio_set` và `asm_gpio_clear`
-cho nhau.
+Only happens with *Debug (extension starts OpenOCD)*. The extension does not
+read `OPENOCD_SCRIPTS` directly from settings; it takes it from the environment
+computed when you select an ESP-IDF installation inside the extension (stored
+in `~/.espressif/esp_idf.json`). Use the default configuration, or register your
+installation: `F1` → *ESP-IDF: Configure ESP-IDF extension* → **USE EXISTING
+SETUP**.
 
 ---
 
-## Đã kiểm chứng
+## Hardware
 
-Toàn bộ nội dung dưới đây đã chạy thật trên board ESP32-C3 SuperMini với
-ESP-IDF v5.3.5, GDB 16.3, OpenOCD v0.12.0-esp32:
+Defaults target the **ESP32-C3 SuperMini** (single USB-C port, built-in
+USB-Serial-JTAG, `303a:1001`):
 
-- `setup.sh` ở cả chế độ `--check` và chạy thật, JSON sinh ra đều hợp lệ
-- `idf.py build`: **0 cảnh báo, 0 lỗi**
-- Nạp và chạy: tự kiểm tra **PASS**, đo được 322 / 16 chu kỳ
-- `doxygen Doxyfile`: **0 cảnh báo**, tài liệu có đủ hàm trong `.S`
-- Debug: OpenOCD lên đúng, **chỉ mở cổng 3333**, GDB dừng đúng `sum_loop`,
-  đọc được thanh ghi, disassembly và danh sách task
+- On-board LED: **GPIO8**, **active low** (write 0 to light it)
+- BOOT button: **GPIO9**, active low
+- **GPIO18/19 are USB** — reconfiguring them drops the connection
+- GPIO0-7 and GPIO10 are free for lab work; the board has **no** LED on them
 
-**Chưa kiểm chứng:** `setup.ps1` và `setup.bat` — máy phát triển chạy Linux,
-không có PowerShell để chạy thử. Logic đối chiếu 1-1 với `setup.sh`, nhưng ai
-chạy Windows đầu tiên nên dùng `tools\setup.bat -Check` trước.
+For another board, change `LED_GPIO` in `main.c`. An external LED wired
+pin → 330 Ω → GND is **active high**, so swap `asm_gpio_set` and
+`asm_gpio_clear`.
 
 ---
 
-## Giấy phép
+## Verification status
 
-MIT. Xem phần `@copyright` trong từng file nguồn.
+Everything below was run on a real ESP32-C3 SuperMini with ESP-IDF v5.3.5,
+GDB 16.3 and OpenOCD v0.12.0-esp32:
+
+- `setup.sh` in both `--check` and normal mode; generated JSON validates
+- `idf.py build`: **no warnings, no errors**
+- Flashed and run: self-check **PASS**, measured 322 / 16 cycles
+- `doxygen Doxyfile`: **no warnings**; the `.S` routines appear in the output
+- Debugging: OpenOCD starts correctly and opens **only port 3333**, GDB stops at
+  `sum_loop`, registers, disassembly and the task list are all readable
+- Cloned into a clean directory and set up from scratch, to confirm nothing
+  machine-specific is committed
+
+**Not verified:** `setup.ps1` and `setup.bat`. The development machine runs
+Linux and has no PowerShell to test them. Their logic mirrors `setup.sh`
+one-to-one, but the first Windows user should run `tools\setup.bat -Check`
+before the real thing.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).

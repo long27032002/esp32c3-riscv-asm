@@ -1,0 +1,7 @@
+## Used only when this example is fetched from the registry: the component
+## manager downloads the dependency named here. Building from a git clone
+## takes the local component instead, through EXTRA_COMPONENT_DIRS in the
+## project CMakeLists, so no namespace is hardcoded for local development.
+dependencies:
+  idf:
+    version: ">=5.0"

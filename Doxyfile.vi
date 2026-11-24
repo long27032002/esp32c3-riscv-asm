@@ -19,5 +19,5 @@ PROJECT_BRIEF          = "Hợp ngữ RISC-V trên ESP32-C3, có tài liệu đ�
 # still treated as a failure.
 OUTPUT_LANGUAGE        = Vietnamese
 
-USE_MDFILE_AS_MAINPAGE = README.md
+USE_MDFILE_AS_MAINPAGE = README.vi.md
 HTML_OUTPUT            = html/vi

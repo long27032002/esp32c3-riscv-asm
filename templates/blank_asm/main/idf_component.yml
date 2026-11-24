@@ -1,0 +1,5 @@
+dependencies:
+  idf:
+    version: ">=5.0"
+  @NAMESPACE@/esp32c3_riscv_asm:
+    version: "^1.0.0"
