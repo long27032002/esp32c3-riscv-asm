@@ -47,6 +47,26 @@ command -v doxygen >/dev/null 2>&1 || {
 WANTED="${1:-both}"
 FAILED=0
 
+# Graphviz is optional. The Doxyfile keeps HAVE_DOT=NO so the build works
+# anywhere; if dot is installed we switch the graphs on by appending to the
+# configuration rather than editing it, which keeps the committed file
+# machine-independent.
+# Run dot rather than only looking for it on PATH: a dot that exists but
+# fails still makes Doxygen report "Problems running dot: exit code=127",
+# and the docs build would fail for a reason that has nothing to do with
+# this project.
+if dot -V >/dev/null 2>&1; then
+    DOT_OVERRIDE="HAVE_DOT=YES"
+    DOT_NOTE="call graphs enabled ($(command -v dot))"
+else
+    DOT_OVERRIDE="HAVE_DOT=NO"
+    if command -v dot >/dev/null 2>&1; then
+        DOT_NOTE="dot found but not working, building without call graphs"
+    else
+        DOT_NOTE="Graphviz not installed, building without call graphs"
+    fi
+fi
+
 # The known Doxygen notice about its own Vietnamese translation, matched by
 # its exact wording so a genuine warning can never slip through with it.
 KNOWN_NOTICE='has not been updated|since release 1\.6\.0|some sentences may appear in English'
@@ -62,7 +82,10 @@ build_one() {
     # directory" unless the parent already exists.
     mkdir -p "${out}"
 
-    doxygen "${conf}" 2>"${log}" >/dev/null || true
+    # Feed the configuration through stdin so the override applies without
+    # touching the committed Doxyfile.
+    { cat "${conf}"; printf '%s\n' "${DOT_OVERRIDE}"; } \
+        | doxygen - 2>"${log}" >/dev/null || true
 
     # Match errors as well as warnings. Doxygen reports a missing output
     # directory as "error:" and still exits 0, so grepping only for "warning"
@@ -96,6 +119,7 @@ build_one() {
     rm -f "${log}"
 }
 
+printf '  %s\n' "${DOT_NOTE}"
 rm -rf docs/html
 
 case "${WANTED}" in

@@ -161,10 +161,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: sudo apt-get update && sudo apt-get install -y doxygen
+      # graphviz is optional for the project - build-docs.sh disables the
+      # call graphs when dot is missing - but installing it here means CI
+      # exercises the branch that actually generates them.
+      - run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
 
       - name: Build both languages, fail on any warning
         run: ./tools/build-docs.sh
+
+      - name: Must also build without Graphviz
+        run: |
+          # The common case for a new user: doxygen installed, graphviz not.
+          sudo apt-get remove -y graphviz
+          ./tools/build-docs.sh
 
       - name: All three entry points must exist
         run: |

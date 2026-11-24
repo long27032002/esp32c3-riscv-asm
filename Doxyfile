@@ -43,6 +43,13 @@ ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = NO
 SEARCH_INCLUDES        = NO
 
+# Declared explicitly rather than left to the default: the default differs
+# between Doxygen builds, and a Doxyfile that silently needs Graphviz on one
+# machine and not on another produces "Problems running dot: exit code=127"
+# for anyone without it. tools/build-docs.sh turns graphs back on when it
+# finds dot, so nothing is lost where Graphviz is installed.
+HAVE_DOT               = NO
+
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
 GENERATE_TREEVIEW      = YES
