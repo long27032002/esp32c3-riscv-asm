@@ -15,10 +15,8 @@
 # builds with no registry account and the sources are there to edit; pass
 # --from-registry to depend on the published component instead.
 #
-# An override_path to the checkout would be shorter but does not work here:
-# the repository root *is* the component, and ESP-IDF names a component after
-# its directory, so it would be registered as "esp32c3-asm-template" and
-# "REQUIRES esp32c3_riscv_asm" would fail to resolve.
+# Copying rather than pointing at the checkout with override_path keeps the
+# new project movable: it still builds after the checkout is deleted.
 #
 # Usage:
 #     ./tools/new-project.sh my_robot
@@ -31,8 +29,7 @@ set -o nounset
 set -o pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# The repository root is the component itself.
-COMPONENT_DIR="${REPO_ROOT}"
+COMPONENT_DIR="${REPO_ROOT}/components/esp32c3_riscv_asm"
 EXAMPLES_DIR="${REPO_ROOT}/examples"
 TEMPLATES_DIR="${REPO_ROOT}/templates"
 

@@ -15,7 +15,7 @@ OUTPUT_LANGUAGE        = English
 
 # Both READMEs are listed so the language-switch link between them resolves;
 # leaving one out makes Doxygen warn about an unresolvable \ref.
-INPUT                  = riscv_asm.h riscv_asm.S examples \
+INPUT                  = components examples \
                          README.md README.vi.md
 
 # templates/ is deliberately left out: those files carry @PLACEHOLDER@ markers

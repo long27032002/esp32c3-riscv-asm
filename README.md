@@ -37,7 +37,7 @@ asm_gpio_clear(8);                     /* LED on, active low */
 | `asm_read_misa()` | the `misa` CSR |
 | `asm_perf_counter_start` / `_read` | cycle and instruction counters |
 
-Full reference in [`riscv_asm.h`](riscv_asm.h).
+Full reference in [`riscv_asm.h`](components/esp32c3_riscv_asm/riscv_asm.h).
 
 ## Try the example
 
@@ -59,7 +59,7 @@ cd esp32c3-riscv-asm
 ```
 
 ```
-riscv_asm.S  riscv_asm.h   the component, at the repository root
+components/esp32c3_riscv_asm/   the component published to the registry
 examples/hello_asm/        complete example, with its own components/riscv_asm
 templates/blank_asm/       skeleton that new-project.sh copies
 tools/                     setup, project generator, docs, JTAG recovery

@@ -37,6 +37,9 @@ permissions:
 
 env:
   COMPONENT_NAME: esp32c3_riscv_asm
+  # The component is a directory beside examples/, not the repository root,
+  # so every compote call has to run from there.
+  COMPONENT_DIR: components/esp32c3_riscv_asm
   # compote defaults to the "espressif" namespace, which nobody else can
   # upload to, so it must be given explicitly. Defaults to the GitHub owner,
   # which is usually the same name people register on the component registry.
@@ -65,7 +68,8 @@ jobs:
 
           manifest="$(python3 -c "
           import yaml
-          print(yaml.safe_load(open('idf_component.yml'))['version'])")"
+          print(yaml.safe_load(
+              open('components/esp32c3_riscv_asm/idf_component.yml'))['version'])")"
           echo "manifest version: ${manifest}"
 
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
@@ -76,7 +80,7 @@ jobs:
               echo "Tag v${tag} does not match version ${manifest} in the manifest."
               echo "Publishing them out of step makes the registry disagree with"
               echo "the source, and the version number cannot be reused later."
-              echo "Fix idf_component.yml, or retag."
+              echo "Fix ${COMPONENT_DIR}/idf_component.yml, or retag."
               exit 1
             fi
           else
@@ -88,6 +92,7 @@ jobs:
         shell: bash
         run: |
           . "${IDF_PATH}/export.sh" >/dev/null
+          cd "${COMPONENT_DIR}"
           compote component pack --name "${COMPONENT_NAME}" --version "${VERSION}"
           ls -la dist/
 
@@ -98,7 +103,10 @@ jobs:
       - name: The archive must contain what the registry displays
         shell: bash
         run: |
-          listing="$(tar tzf dist/*.tgz)"
+          # Two archives come out of compote when the examples live
+          # outside the component, so pin the name instead of globbing.
+          d="${COMPONENT_DIR}/dist"
+          listing="$(tar tzf "${d}/${COMPONENT_NAME}_${VERSION}.tgz")"
           fail=0
           for want in ./README.md ./LICENSE \
                       ./CMakeLists.txt ./riscv_asm.h ./riscv_asm.S; do
@@ -109,6 +117,14 @@ jobs:
               fail=1
             fi
           done
+          ex="$(tar tzf "${d}/${COMPONENT_NAME}_${VERSION}_examples.tgz")"
+          if grep -q 'hello_asm/main/app_asm.S' <<< "${ex}"; then
+            echo "  ok      examples archive carries hello_asm"
+          else
+            echo "  MISSING hello_asm in the examples archive"
+            fail=1
+          fi
+
           if [ "${fail}" -ne 0 ]; then
             echo
             echo "Refusing to publish: the registry page would be incomplete,"
@@ -145,6 +161,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           . "${IDF_PATH}/export.sh" >/dev/null
+          cd "${COMPONENT_DIR}"
 
           # A manual run defaults to a dry run; a tag push publishes.
           echo "namespace: ${COMPONENT_NAMESPACE}"
@@ -178,5 +195,5 @@ jobs:
         if: always()
         with:
           name: component-archive
-          path: dist/*.tgz
+          path: components/esp32c3_riscv_asm/dist/*.tgz
           if-no-files-found: warn

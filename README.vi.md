@@ -38,7 +38,7 @@ asm_gpio_clear(8);                     /* LED sáng, tích cực mức thấp */
 | `asm_read_misa()` | CSR `misa` |
 | `asm_perf_counter_start` / `_read` | bộ đếm chu kỳ và số lệnh |
 
-Tham chiếu đầy đủ trong [`riscv_asm.h`](riscv_asm.h).
+Tham chiếu đầy đủ trong [`riscv_asm.h`](components/esp32c3_riscv_asm/riscv_asm.h).
 
 ## Chạy thử example
 
@@ -60,7 +60,7 @@ cd esp32c3-riscv-asm
 ```
 
 ```
-riscv_asm.S  riscv_asm.h   component, nằm ngay gốc repo
+components/esp32c3_riscv_asm/   component đưa lên registry
 examples/hello_asm/        example hoàn chỉnh, có components/riscv_asm riêng
 templates/blank_asm/       khung rỗng cho new-project.sh
 tools/                     cài đặt, tạo dự án, tài liệu, gỡ kẹt JTAG
