@@ -332,6 +332,7 @@ else
             -e "s|@PROJECT_NAME@|${PROJECT_NAME}|g" \
             -e "s|@INITIAL_BREAKPOINT@|${INITIAL_BREAKPOINT}|g" \
             -e "s|@QEMU_SH@|${REPO_ROOT}/tools/qemu.sh|g" \
+            -e "s|@TDESC@|${TEMPLATE_DIR}/riscv-qemu.xml|g" \
             "${src}" > "${dst}"
         ok "${dst#"${PROJECT_DIR}"/}"
     }

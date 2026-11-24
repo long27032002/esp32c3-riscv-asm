@@ -51,29 +51,42 @@
             "cwd": "${workspaceFolder}",
             "openGdbConsole": true,
             "initialBreakpoint": "@INITIAL_BREAKPOINT@",
-            // Two things about this list are not obvious.
+            // Connecting is done by connectCommands, for one reason: the
+            // target description has to be set BEFORE the connection, and
+            // this is the only hook that runs that early. initCommands are
+            // sent AFTER the adapter has connected:
             //
-            // It MUST contain a "target remote" line. The extension keeps a
-            // configured list only if one of its entries starts with
-            // "target"; otherwise it throws the whole list away and uses its
-            // own defaults, which include "monitor reset halt". QEMU's gdb
-            // stub has no such monitor command - it answers "unknown command:
-            // 'reset'" - and the defaults connect on their own, so a
-            // connectCommands block here would then connect a SECOND time and
-            // fail with "A program is being debugged already", followed by
-            // "could not connect: Connection timed out".
+            //     if (connectCommands === undefined)
+            //         -target-select remote <host>:<port>
+            //     else
+            //         sendCommands(connectCommands)
+            //     sendCommands(initCommands)
             //
-            // No reset command is needed in the first place: QEMU holds the
-            // CPU at the reset vector until a debugger attaches.
+            // which is also why initCommands must contain no "target remote":
+            // that connects a second time and the session dies with "A program
+            // is being debugged already", then "could not connect: Connection
+            // timed out".
+            //
+            // Why the description is overridden at all: QEMU advertises far
+            // more CSRs than it will serve, and the Registers pane asks for
+            // every register in one request, so a single refusal - the first
+            // is "htimedelta" - empties the whole pane. See the comments in
+            // tools/templates/riscv-qemu.xml, including what this costs.
+            //
+            // No reset command is needed: QEMU holds the CPU at the reset
+            // vector until a debugger attaches, and its gdb stub has no
+            // "monitor reset" anyway.
             "initCommands": [
                 "set remotetimeout 20",
-                "set print pretty on",
-                "target remote localhost:3333",
-                "maintenance flush register-cache"
+                "set print pretty on"
             ],
             "target": {
                 "host": "localhost",
-                "port": "3333"
+                "port": "3333",
+                "connectCommands": [
+                    "set tdesc filename @TDESC@",
+                    "target remote localhost:3333"
+                ]
             }
         },
         {

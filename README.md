@@ -333,9 +333,9 @@ In VS Code, pick **Debug on QEMU (no board)** and press F5.
 
 ### What works, and what the emulator cannot tell you
 
-Breakpoints, single-stepping, the Disassembly view, the **full register set**
-— general-purpose *and* CSRs (`misa`, `mstatus`, `mtvec`, `mepc`, `mcause`) —
-writing to registers, and the MEMORY view all behave as they do over JTAG.
+Breakpoints, single-stepping, the Disassembly view, all 32 general-purpose
+registers plus `pc` in **Variables → Registers**, writing to registers, and the
+MEMORY view all behave as they do over JTAG.
 
 What does not carry over:
 
@@ -346,6 +346,16 @@ What does not carry over:
   instructions, not with real pipeline behaviour. Flash timing is not modelled.
 - **No xRTOS task list.** Task awareness comes from OpenOCD's `-rtos` support;
   QEMU's gdb stub reports one thread per emulated CPU instead.
+- **No CSRs by name.** QEMU advertises far more CSRs than it will serve, and
+  the Registers pane asks for every register in a single request, so one
+  refusal — the first is `htimedelta`, a hypervisor CSR — empties the pane.
+  The QEMU configuration therefore hands gdb a restricted target description
+  (`tools/templates/riscv-qemu.xml`), which costs the CSR names: `p/x $misa`
+  answers `void`. Read them from the program instead — `asm_read_misa()` does
+  exactly that — or debug on the board, where OpenOCD advertises only
+  registers it serves and both the pane and the CSR names work. To make the
+  opposite trade, delete the `set tdesc filename` line from
+  `.vscode/launch.json`.
 - **`misa` differs.** QEMU reports `0x401411ad`; the header documents the chip's
   `0x40101104`. If you are studying which extensions the silicon really has, use
   the board.
@@ -484,6 +494,7 @@ missing `@param` is how reference documentation rots.
 | QEMU: `Failed to bind socket`, or the debugger cannot connect | OpenOCD or an older QEMU holds 3333. `pkill -x openocd; pkill -f '[q]emu-system-riscv32'`. Note that `pkill -x qemu-system-riscv32` silently matches nothing: `/proc/PID/comm` truncates the name to 15 characters. |
 | QEMU boots, prints the bootloader, then nothing | The console is on USB-Serial-JTAG, which QEMU does not emulate. Use `tools/qemu.sh`, which layers `sdkconfig.qemu`. |
 | QEMU: `libslirp.so.0: cannot open shared object file` | Install libslirp (`libslirp0` on Debian and Ubuntu). |
+| The Registers pane shows only `Could not fetch register "h…"` | QEMU advertises CSRs it will not serve, and one refusal fails the whole request. Regenerate with `tools/setup.sh`, which points gdb at a restricted target description. |
 | QEMU debug console shows `unknown command: 'reset'` | Harmless. The extension prefixes `monitor reset halt`; QEMU's gdb stub has no such command, and the connection is already up. Nothing needs resetting — QEMU holds the CPU at the reset vector until a debugger attaches. |
 | `A program is being debugged already` / `could not connect: Connection timed out` | Something connected twice. `initCommands` are sent *after* the adapter has connected, so a `target remote` there — or in `connectCommands` — connects a second time. Regenerate with `tools/setup.sh`. |
 | The serial port changed name after a reset | Native USB re-enumerates. The generated configuration uses the stable `/dev/serial/by-id/...` path; pass `--port` to override. |
