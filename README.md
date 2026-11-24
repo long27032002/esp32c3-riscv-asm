@@ -70,7 +70,7 @@ them.
 ### A. Add the component to a project of your own
 
 ```bash
-idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.1.0"
+idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.2.0"
 ```
 
 ```c
@@ -415,7 +415,7 @@ idf.py set-target esp32c3 && idf.py build
 Or start from the registry, which needs no clone at all:
 
 ```bash
-idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.1.0:hello_asm"
+idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.2.0:hello_asm"
 ```
 
 ### Writing your own routine
@@ -500,6 +500,8 @@ missing `@param` is how reference documentation rots.
 | QEMU: `Failed to bind socket`, or the debugger cannot connect | OpenOCD or an older QEMU holds 3333. `pkill -x openocd; pkill -f '[q]emu-system-riscv32'`. Note that `pkill -x qemu-system-riscv32` silently matches nothing: `/proc/PID/comm` truncates the name to 15 characters. |
 | QEMU boots, prints the bootloader, then nothing | The console is on USB-Serial-JTAG, which QEMU does not emulate. Use `tools/qemu.sh`, which layers `sdkconfig.qemu`. |
 | QEMU: `libslirp.so.0: cannot open shared object file` | Install libslirp (`libslirp0` on Debian and Ubuntu). |
+| `Errors exist after running preLaunchTask 'qemu (gdb server)'` | Not the task. After a preLaunchTask VS Code looks for error markers anywhere and asks before starting, so IntelliSense complaints about an open ESP-IDF file are enough to block F5. The generated settings set `debug.onTaskErrors` to `debugAnyway`; regenerate with `tools/setup.sh`. |
+| `cannot open source file "soc/soc.h"` and friends | IntelliSense found no `compile_commands.json`. A QEMU session builds into `build-qemu/`, a board session into `build/`; the generated settings list both. Regenerate with `tools/setup.sh`, and build at least once. |
 | `"monitor" command not supported by this target.` | A board configuration ran with no OpenOCD: the connection failed, and the post-connect commands then ran on a session that never connected. Usually it means the **repository root** is open in VS Code rather than a project folder — an old `.vscode/launch.json` there offers board configurations for an ELF that no longer exists. Open `examples/hello_asm`; `tools/setup.sh` deletes the stale root files. |
 | The Registers pane shows only `Could not fetch register "h…"` | QEMU advertises CSRs it will not serve, and one refusal fails the whole request. Regenerate with `tools/setup.sh`, which points gdb at a restricted target description. |
 | QEMU debug console shows `unknown command: 'reset'` | Harmless. The extension prefixes `monitor reset halt`; QEMU's gdb stub has no such command, and the connection is already up. Nothing needs resetting — QEMU holds the CPU at the reset vector until a debugger attaches. |

@@ -10,7 +10,7 @@
 ## be run by hand from the Actions tab as a dry run, which validates the
 ## archive against the registry without credentials and without publishing.
 
-version: "1.1.0"
+version: "1.2.0"
 description: >-
   RISC-V (RV32IMC) assembly routines for the ESP32-C3, documented with Doxygen
   and callable from C. Includes a VS Code debug setup with MEMORY and xRTOS
@@ -44,3 +44,17 @@ targets:
 ## "idf.py create-project-from-example ...:hello_asm" work.
 examples:
   - path: ../../examples/hello_asm
+
+## A built example carries a build directory of its own, and the examples
+## archive would ship it: 1939 of 1956 entries, once measured. CI never sees
+## this - every job checks out a clean tree - so it only appears when packing
+## from a working copy, which is exactly what a manual upload does.
+files:
+  exclude:
+    - "**/build/**/*"
+    - "**/build-qemu/**/*"
+    - "**/managed_components/**/*"
+    - "**/.vscode/*"
+    - "**/sdkconfig"
+    - "**/sdkconfig.old"
+    - "**/dependencies.lock"

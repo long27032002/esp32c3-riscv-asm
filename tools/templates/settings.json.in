@@ -40,5 +40,27 @@
     // ---------------------------------------------------------------------
     "files.associations": { "*.S": "asm-intel-x86-generic" },
     "C_Cpp.default.compilerPath": "@TOOLCHAIN_GCC@",
-    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json"
+
+    // Both build directories are listed, and the setting takes an array for
+    // exactly this reason. A QEMU session builds into build-qemu/, a board
+    // session into build/, and whichever one has not been built yet simply
+    // is not there. With a single path pointing at a missing file,
+    // IntelliSense has no include paths at all and every ESP-IDF header it
+    // opens turns into "cannot open source file soc/soc.h" - nine errors
+    // from one absent file.
+    "C_Cpp.default.compileCommands": [
+        "${workspaceFolder}/build/compile_commands.json",
+        "${workspaceFolder}/build-qemu/compile_commands.json"
+    ],
+
+    // ---------------------------------------------------------------------
+    // Debugging
+    // ---------------------------------------------------------------------
+    // After a preLaunchTask, VS Code looks for error markers and asks
+    // "Errors exist after running preLaunchTask" before it will start the
+    // session. It does not check whether those errors have anything to do
+    // with the task: IntelliSense complaints about an ESP-IDF source file
+    // that happens to be open are enough to block F5. The task itself
+    // reports its own failures on its terminal, so skip the prompt.
+    "debug.onTaskErrors": "debugAnyway"
 }
