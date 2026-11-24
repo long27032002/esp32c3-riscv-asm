@@ -14,6 +14,10 @@
 #     https://components.espressif.com  ->  Profile -> Tokens
 # with the "write:components" scope. Without it the workflow stops with a
 # message instead of failing somewhere deep inside compote.
+#
+# The namespace is your account name on the registry. It defaults to the
+# GitHub repository owner; set the repository variable
+# IDF_COMPONENT_NAMESPACE if the two differ.
 
 name: Publish to ESP Component Registry
 
@@ -34,6 +38,13 @@ permissions:
 env:
   COMPONENT_DIR: components/esp32c3_riscv_asm
   COMPONENT_NAME: esp32c3_riscv_asm
+  # compote defaults to the "espressif" namespace, which nobody else can
+  # upload to, so it must be given explicitly. Defaults to the GitHub owner,
+  # which is usually the same name people register on the component registry.
+  # Override with a repository variable if yours differs:
+  #   Settings -> Secrets and variables -> Actions -> Variables ->
+  #   IDF_COMPONENT_NAMESPACE
+  COMPONENT_NAMESPACE: ${{ vars.IDF_COMPONENT_NAMESPACE || github.repository_owner }}
 
 jobs:
   publish:
@@ -114,7 +125,11 @@ jobs:
           cd "${COMPONENT_DIR}"
 
           # A manual run defaults to a dry run; a tag push publishes.
-          args=(component upload --name "${COMPONENT_NAME}" --version "${VERSION}")
+          echo "namespace: ${COMPONENT_NAMESPACE}"
+          args=(component upload
+                --namespace "${COMPONENT_NAMESPACE}"
+                --name "${COMPONENT_NAME}"
+                --version "${VERSION}")
           if [ "${DRY_RUN}" = "true" ]; then
             args+=(--dry-run)
             echo "dry run: validating only, nothing will be published"
@@ -131,10 +146,10 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             echo "Validation passed. Push a v tag to publish for real."
           else
-            echo "https://components.espressif.com/components/<namespace>/${COMPONENT_NAME}"
+            echo "https://components.espressif.com/components/${COMPONENT_NAMESPACE}/${COMPONENT_NAME}"
             echo
             echo "Install it with:"
-            echo "  idf.py add-dependency \"<namespace>/${COMPONENT_NAME}^${VERSION}\""
+            echo "  idf.py add-dependency \"${COMPONENT_NAMESPACE}/${COMPONENT_NAME}^${VERSION}\""
           fi
 
       - uses: actions/upload-artifact@v4

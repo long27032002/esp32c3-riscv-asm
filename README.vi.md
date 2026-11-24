@@ -193,8 +193,14 @@ Muốn phát hành từ máy mình:
 ```bash
 export IDF_COMPONENT_API_TOKEN=...
 cd components/esp32c3_riscv_asm
-compote component upload --name esp32c3_riscv_asm --version 1.0.0
+compote component upload --namespace <tai-khoan-cua-ban> \
+                         --name esp32c3_riscv_asm --version 1.0.0
 ```
+
+Thiếu `--namespace` thì compote mặc định dùng `espressif` và registry báo
+*"You do not have upload permissions"*. Trong CI, namespace mặc định lấy theo
+chủ repo GitHub; nếu tài khoản registry của bạn tên khác thì đặt biến
+`IDF_COMPONENT_NAMESPACE` trong repository variables.
 
 ### Nếu namespace của bạn khác `long27032002`
 

@@ -202,8 +202,14 @@ To publish from your own machine instead:
 ```bash
 export IDF_COMPONENT_API_TOKEN=...
 cd components/esp32c3_riscv_asm
-compote component upload --name esp32c3_riscv_asm --version 1.0.0
+compote component upload --namespace <your-account> \
+                         --name esp32c3_riscv_asm --version 1.0.0
 ```
+
+Without `--namespace`, compote defaults to `espressif` and the registry
+answers *"You do not have upload permissions"*. In CI the namespace defaults
+to the GitHub repository owner; set the repository variable
+`IDF_COMPONENT_NAMESPACE` if your registry account has a different name.
 
 ### If your namespace is not `long27032002`
 
