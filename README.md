@@ -17,10 +17,10 @@ Pick whichever fits what you are doing.
 
 ```bash
 # 1. Run the worked example, straight from the registry
-idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.0.0:hello_asm"
+idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.0.1:hello_asm"
 
 # 2. Add the routines to a project you already have
-idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.0.0"
+idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.0.1"
 
 # 3. Start something new, from a clone of this repository
 git clone https://github.com/long27032002/esp32c3-riscv-asm.git

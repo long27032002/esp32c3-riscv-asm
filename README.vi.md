@@ -17,10 +17,10 @@ Chọn cách hợp với việc bạn đang làm.
 
 ```bash
 # 1. Chạy example, tải thẳng từ registry
-idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.0.0:hello_asm"
+idf.py create-project-from-example "long27032002/esp32c3_riscv_asm^1.0.1:hello_asm"
 
 # 2. Thêm thư viện vào dự án sẵn có
-idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.0.0"
+idf.py add-dependency "long27032002/esp32c3_riscv_asm^1.0.1"
 
 # 3. Bắt đầu dự án mới, từ bản clone repo này
 git clone https://github.com/long27032002/esp32c3-riscv-asm.git
