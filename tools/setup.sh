@@ -274,6 +274,12 @@ fi
 # and never changes.
 step "Detecting the board"
 SERIAL_PORT=""
+# Decides which debug configuration VS Code offers first. Without a board the
+# OpenOCD configurations cannot work, and picking one produces errors that
+# name OpenOCD rather than the missing board: "OpenOCD is not running", then
+# "monitor command not supported by this target" when the post-connect
+# commands run on a session that never connected.
+BOARD_PRESENT=1
 if [ -n "${ARG_PORT}" ]; then
     SERIAL_PORT="${ARG_PORT}"
     ok "serial port from --port: ${SERIAL_PORT}"
@@ -294,6 +300,7 @@ else
             warn "this name can change after a reset; re-run setup if it does"
         else
             SERIAL_PORT="/dev/ttyACM0"
+            BOARD_PRESENT=0
             warn "no board detected - plug it in and re-run, or pass --port"
         fi
     fi
@@ -339,6 +346,33 @@ else
     render settings.json
     render launch.json
     render tasks.json
+
+    # VS Code offers the first configuration in the list by default. With no
+    # board attached only the QEMU one can work, and choosing an OpenOCD one
+    # by accident fails in a way that never mentions the board: first
+    # "OpenOCD is not running", then, because the post-connect commands run
+    # on a session that never connected, the gdb error
+    # "monitor command not supported by this target".
+    "${IDF_PYTHON}" - "${VSCODE_DIR}/launch.json" "${BOARD_PRESENT}" <<'PY'
+import sys, pathlib
+
+path, board_present = pathlib.Path(sys.argv[1]), sys.argv[2] == "1"
+text = path.read_text(encoding="utf8")
+begin, end = "        // @QEMU_BLOCK_BEGIN@\n", "        // @QEMU_BLOCK_END@\n"
+
+if begin in text and end in text:
+    head, rest = text.split(begin, 1)
+    block, tail = rest.split(end, 1)
+    if board_present:
+        text = head + block + tail
+    else:
+        # Insert ahead of the first configuration, which starts on the line
+        # after "configurations": [ .
+        anchor = '"configurations": [\n'
+        i = head.index(anchor) + len(anchor)
+        text = head[:i] + block + head[i:] + tail
+    path.write_text(text, encoding="utf8")
+PY
 
     # Validate the generated JSONC: a stray character here turns into an
     # unhelpful VS Code error hours later.

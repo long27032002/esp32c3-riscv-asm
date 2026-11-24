@@ -259,10 +259,10 @@ Breakpoint đặt thẳng trong file `.S`: bấm vào lề cạnh bất kỳ nh�
 
 | Cấu hình | Dùng khi nào |
 |---|---|
-| **Debug (task starts OpenOCD)** | Mặc định. Một task của VS Code khởi động OpenOCD bằng đường dẫn tuyệt đối, nên chạy được dù extension có đăng ký ESP-IDF hay không. |
+| **Debug on board (task starts OpenOCD)** | Mặc định. Một task của VS Code khởi động OpenOCD bằng đường dẫn tuyệt đối, nên chạy được dù extension có đăng ký ESP-IDF hay không. |
 | **Debug on QEMU (no board)** | Không có phần cứng. Xem [QEMU](#chạy-khi-không-có-board-qemu). |
-| **Debug (extension starts OpenOCD)** | Để extension ESP-IDF tự quản OpenOCD. Cần extension biết một bản cài ESP-IDF, nếu không nó báo `OPENOCD_SCRIPTS … missing`. |
-| **Debug (OpenOCD already running)** | Bạn tự chạy OpenOCD ở một terminal. |
+| **Debug on board (extension starts OpenOCD)** | Để extension ESP-IDF tự quản OpenOCD. Cần extension biết một bản cài ESP-IDF, nếu không nó báo `OPENOCD_SCRIPTS … missing`. |
+| **Debug on board (OpenOCD already running)** | Bạn tự chạy OpenOCD ở một terminal. |
 
 ### Các task
 
@@ -486,11 +486,12 @@ là cách tài liệu tham chiếu mục ruỗng dần.
 | QEMU: `Failed to bind socket`, hoặc debugger không kết nối được | OpenOCD hoặc một QEMU cũ đang giữ 3333. `pkill -x openocd; pkill -f '[q]emu-system-riscv32'`. Lưu ý `pkill -x qemu-system-riscv32` không khớp gì cả: `/proc/PID/comm` cắt tên còn 15 ký tự. |
 | QEMU khởi động, in bootloader rồi im | Console đang ở USB-Serial-JTAG, QEMU không mô phỏng. Dùng `tools/qemu.sh`, nó nạp thêm `sdkconfig.qemu`. |
 | QEMU: `libslirp.so.0: cannot open shared object file` | Cài libslirp (Debian và Ubuntu: `libslirp0`). |
+| `"monitor" command not supported by this target.` | Một cấu hình dành cho board được chạy khi không có OpenOCD: kết nối thất bại, rồi các lệnh sau-kết-nối chạy trên một phiên chưa hề kết nối. Chọn **Debug on QEMU (no board)**, hoặc cắm board vào. |
 | Panel Registers chỉ hiện `Could not fetch register "h…"` | QEMU khai cả những CSR nó không phục vụ, và chỉ một lần từ chối là hỏng cả lệnh. Sinh lại bằng `tools/setup.sh`, nó trỏ gdb sang một mô tả thanh ghi rút gọn. |
 | Debug console của QEMU hiện `unknown command: 'reset'` | Vô hại. Extension tự chèn `monitor reset halt`; gdbstub của QEMU không có lệnh đó, mà kết nối thì đã lên rồi. Cũng chẳng cần reset — QEMU giữ CPU ở reset vector tới khi debugger gắn vào. |
 | `A program is being debugged already` / `could not connect: Connection timed out` | Có thứ gì đó connect hai lần. `initCommands` được gửi *sau* khi adapter đã kết nối, nên để `target remote` ở đó — hoặc trong `connectCommands` — là connect lần nữa. Sinh lại bằng `tools/setup.sh`. |
 | Cổng serial đổi tên sau khi reset | USB tích hợp nối lại. Cấu hình sinh ra dùng đường dẫn cố định `/dev/serial/by-id/...`; muốn ép thì truyền `--port`. |
-| Extension báo `OPENOCD_SCRIPTS environment variable is missing` | Bạn chọn *Debug (extension starts OpenOCD)* mà chưa đăng ký bản cài ESP-IDF. Dùng cấu hình mặc định, hoặc F1 → *ESP-IDF: Configure ESP-IDF extension* → **USE EXISTING SETUP**. |
+| Extension báo `OPENOCD_SCRIPTS environment variable is missing` | Bạn chọn *Debug on board (extension starts OpenOCD)* mà chưa đăng ký bản cài ESP-IDF. Dùng cấu hình mặc định, hoặc F1 → *ESP-IDF: Configure ESP-IDF extension* → **USE EXISTING SETUP**. |
 | `env: 'bash\r': No such file or directory` | Script shell bị checkout với kết thúc dòng CRLF. `sed -i 's/\r$//' tools/*.sh`, và kiểm tra `.gitattributes` còn nguyên. |
 | `fatal error: riscv/rv_utils.h: No such file or directory` | Một thư mục component của bạn đang tên `riscv`, va với component có sẵn của ESP-IDF. Đổi tên nó. |
 | LED không nháy nhưng console vẫn bình thường | Sai chân hoặc sai cực tính với board của bạn. Mặc định là GPIO8, tích cực mức thấp. |

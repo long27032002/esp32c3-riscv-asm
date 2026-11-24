@@ -261,10 +261,10 @@ Breakpoints work directly in `.S` files: click the gutter next to any label.
 
 | Configuration | When to use it |
 |---|---|
-| **Debug (task starts OpenOCD)** | The default. A VS Code task starts OpenOCD with absolute paths, so it works whether or not the extension has a registered ESP-IDF installation. |
+| **Debug on board (task starts OpenOCD)** | The default. A VS Code task starts OpenOCD with absolute paths, so it works whether or not the extension has a registered ESP-IDF installation. |
 | **Debug on QEMU (no board)** | No hardware attached. See [QEMU](#running-without-a-board-qemu). |
-| **Debug (extension starts OpenOCD)** | Lets the ESP-IDF extension manage OpenOCD. Requires the extension to know an ESP-IDF installation; otherwise it reports `OPENOCD_SCRIPTS … missing`. |
-| **Debug (OpenOCD already running)** | You started OpenOCD yourself in a terminal. |
+| **Debug on board (extension starts OpenOCD)** | Lets the ESP-IDF extension manage OpenOCD. Requires the extension to know an ESP-IDF installation; otherwise it reports `OPENOCD_SCRIPTS … missing`. |
+| **Debug on board (OpenOCD already running)** | You started OpenOCD yourself in a terminal. |
 
 ### Tasks
 
@@ -494,11 +494,12 @@ missing `@param` is how reference documentation rots.
 | QEMU: `Failed to bind socket`, or the debugger cannot connect | OpenOCD or an older QEMU holds 3333. `pkill -x openocd; pkill -f '[q]emu-system-riscv32'`. Note that `pkill -x qemu-system-riscv32` silently matches nothing: `/proc/PID/comm` truncates the name to 15 characters. |
 | QEMU boots, prints the bootloader, then nothing | The console is on USB-Serial-JTAG, which QEMU does not emulate. Use `tools/qemu.sh`, which layers `sdkconfig.qemu`. |
 | QEMU: `libslirp.so.0: cannot open shared object file` | Install libslirp (`libslirp0` on Debian and Ubuntu). |
+| `"monitor" command not supported by this target.` | A board configuration was launched with no OpenOCD running: the connection failed, and the post-connect commands then ran on a session that never connected. Pick **Debug on QEMU (no board)**, or plug the board in. |
 | The Registers pane shows only `Could not fetch register "h…"` | QEMU advertises CSRs it will not serve, and one refusal fails the whole request. Regenerate with `tools/setup.sh`, which points gdb at a restricted target description. |
 | QEMU debug console shows `unknown command: 'reset'` | Harmless. The extension prefixes `monitor reset halt`; QEMU's gdb stub has no such command, and the connection is already up. Nothing needs resetting — QEMU holds the CPU at the reset vector until a debugger attaches. |
 | `A program is being debugged already` / `could not connect: Connection timed out` | Something connected twice. `initCommands` are sent *after* the adapter has connected, so a `target remote` there — or in `connectCommands` — connects a second time. Regenerate with `tools/setup.sh`. |
 | The serial port changed name after a reset | Native USB re-enumerates. The generated configuration uses the stable `/dev/serial/by-id/...` path; pass `--port` to override. |
-| The extension reports `OPENOCD_SCRIPTS environment variable is missing` | You picked *Debug (extension starts OpenOCD)* without registering an ESP-IDF installation. Use the default configuration, or F1 → *ESP-IDF: Configure ESP-IDF extension* → **USE EXISTING SETUP**. |
+| The extension reports `OPENOCD_SCRIPTS environment variable is missing` | You picked *Debug on board (extension starts OpenOCD)* without registering an ESP-IDF installation. Use the default configuration, or F1 → *ESP-IDF: Configure ESP-IDF extension* → **USE EXISTING SETUP**. |
 | `env: 'bash\r': No such file or directory` | The shell scripts were checked out with CRLF endings. `sed -i 's/\r$//' tools/*.sh`, and check that `.gitattributes` survived. |
 | `fatal error: riscv/rv_utils.h: No such file or directory` | A component directory of yours is named `riscv`, colliding with ESP-IDF's built-in component. Rename it. |
 | The LED does not blink but the console looks fine | Wrong pin or wrong polarity for your board. The default is GPIO8, active low. |
