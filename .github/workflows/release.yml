@@ -1,0 +1,139 @@
+# Publish the component to the ESP Component Registry.
+#
+# Triggered by pushing a version tag:
+#
+#     git tag v1.0.0 && git push origin v1.0.0
+#
+# or by hand from the Actions tab, where "dry run" validates the upload
+# without publishing anything. A published version is permanent: the registry
+# allows yanking a version but never reusing its number, so the dry run is
+# worth doing first.
+#
+# A dry run needs no credentials. Publishing for real requires the repository
+# secret IDF_COMPONENT_API_TOKEN, created at
+#     https://components.espressif.com  ->  Profile -> Tokens
+# with the "write:components" scope. Without it the workflow stops with a
+# message instead of failing somewhere deep inside compote.
+
+name: Publish to ESP Component Registry
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Validate the upload without publishing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  COMPONENT_DIR: components/esp32c3_riscv_asm
+  COMPONENT_NAME: esp32c3_riscv_asm
+
+jobs:
+  publish:
+    name: Pack and upload
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.3.5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The tag and the manifest must agree
+        shell: bash
+        run: |
+          manifest="$(python3 -c "
+          import yaml
+          print(yaml.safe_load(open('${COMPONENT_DIR}/idf_component.yml'))['version'])")"
+          echo "manifest version: ${manifest}"
+
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tag="${GITHUB_REF_NAME#v}"
+            echo "tag version:      ${tag}"
+            if [ "${tag}" != "${manifest}" ]; then
+              echo
+              echo "Tag v${tag} does not match version ${manifest} in the manifest."
+              echo "Publishing them out of step makes the registry disagree with"
+              echo "the source, and the version number cannot be reused later."
+              echo "Fix idf_component.yml, or retag."
+              exit 1
+            fi
+          else
+            echo "manual run, no tag to compare against"
+          fi
+          echo "VERSION=${manifest}" >> "${GITHUB_ENV}"
+
+      - name: Pack
+        shell: bash
+        run: |
+          . "${IDF_PATH}/export.sh" >/dev/null
+          cd "${COMPONENT_DIR}"
+          compote component pack --name "${COMPONENT_NAME}" --version "${VERSION}"
+          ls -la dist/
+
+      # A dry run needs no credentials: the registry validates an anonymous
+      # archive and answers "Uploaded archive is valid". Only a real publish
+      # needs the token, so requiring it earlier would block the very check
+      # people should run first.
+      - name: Check the token is present
+        if: inputs.dry_run != true
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.IDF_COMPONENT_API_TOKEN }}
+        run: |
+          if [ -z "${TOKEN}" ]; then
+            echo "The secret IDF_COMPONENT_API_TOKEN is not set."
+            echo
+            echo "  1. Sign in at https://components.espressif.com"
+            echo "  2. Profile -> Tokens -> create one with write:components"
+            echo "  3. Repository -> Settings -> Secrets and variables ->"
+            echo "     Actions -> New repository secret, named"
+            echo "     IDF_COMPONENT_API_TOKEN"
+            exit 1
+          fi
+          echo "token present"
+
+      - name: Upload
+        shell: bash
+        env:
+          IDF_COMPONENT_API_TOKEN: ${{ secrets.IDF_COMPONENT_API_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          . "${IDF_PATH}/export.sh" >/dev/null
+          cd "${COMPONENT_DIR}"
+
+          # A manual run defaults to a dry run; a tag push publishes.
+          args=(component upload --name "${COMPONENT_NAME}" --version "${VERSION}")
+          if [ "${DRY_RUN}" = "true" ]; then
+            args+=(--dry-run)
+            echo "dry run: validating only, nothing will be published"
+          else
+            echo "publishing ${COMPONENT_NAME} ${VERSION}"
+          fi
+
+          compote "${args[@]}"
+
+      - name: Where it landed
+        if: success()
+        shell: bash
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "Validation passed. Push a v tag to publish for real."
+          else
+            echo "https://components.espressif.com/components/<namespace>/${COMPONENT_NAME}"
+            echo
+            echo "Install it with:"
+            echo "  idf.py add-dependency \"<namespace>/${COMPONENT_NAME}^${VERSION}\""
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: component-archive
+          path: ${{ env.COMPONENT_DIR }}/dist/*.tgz
+          if-no-files-found: warn

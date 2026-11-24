@@ -4,8 +4,11 @@
 ##     compote component pack --name esp32c3_riscv_asm      # build the archive
 ##     compote component upload --name esp32c3_riscv_asm    # needs a token
 ##
-## CI packs the component on every push to prove the manifest is valid, and
-## uploads only when a v* tag is pushed and the token secret is present.
+## .github/workflows/ci.yml packs the component on every push, to prove the
+## manifest and the file list stay valid.
+## .github/workflows/release.yml publishes it when a v* tag is pushed, and can
+## be run by hand from the Actions tab as a dry run, which validates the
+## archive against the registry without credentials and without publishing.
 
 version: "1.0.0"
 description: >-

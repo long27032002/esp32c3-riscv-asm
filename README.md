@@ -152,6 +152,70 @@ the ESP-IDF actually in use.
 
 ---
 
+## Publishing to the ESP Component Registry
+
+The component is not published yet. Everything needed is in place; these are
+the steps.
+
+### 1. Validate first, no account needed
+
+A dry run uploads the archive for checking and publishes nothing. The registry
+accepts it anonymously:
+
+```bash
+cd components/esp32c3_riscv_asm
+compote component pack   --name esp32c3_riscv_asm --version 1.0.0
+compote component upload --name esp32c3_riscv_asm --version 1.0.0 --dry-run
+# NOTICE: Uploaded archive is valid
+```
+
+Or from the **Actions** tab: *Publish to ESP Component Registry* ->
+**Run workflow**, leaving "dry run" ticked.
+
+### 2. Create a token
+
+Sign in at [components.espressif.com](https://components.espressif.com) ->
+**Profile** -> **Tokens** -> create one with the `write:components` scope.
+
+Your account name becomes the namespace: a component owned by `alice` installs
+as `alice/esp32c3_riscv_asm`.
+
+### 3. Store the token
+
+Repository -> **Settings** -> **Secrets and variables** -> **Actions** ->
+**New repository secret**, named `IDF_COMPONENT_API_TOKEN`.
+
+### 4. Publish
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The workflow refuses to run if the tag and the `version` in
+`idf_component.yml` disagree. **A published version is permanent** — the
+registry can yank a version but never reuse its number, so bump the manifest
+for every release.
+
+To publish from your own machine instead:
+
+```bash
+export IDF_COMPONENT_API_TOKEN=...
+cd components/esp32c3_riscv_asm
+compote component upload --name esp32c3_riscv_asm --version 1.0.0
+```
+
+### If your namespace is not `long27032002`
+
+Three places name it, and they must agree:
+
+| File | What to change |
+|---|---|
+| `tools/new-project.sh` | `NAMESPACE=` near the top |
+| `README.md`, `README.vi.md` | the `idf.py add-dependency` lines |
+| `components/.../examples/hello_asm/README.md` | the `create-project-from-example` line |
+
+
 ## Continuous integration (GitHub Actions)
 
 Every push and pull request runs six jobs in parallel. See the **Actions** tab,
@@ -405,6 +469,14 @@ GDB 16.3 and OpenOCD v0.12.0-esp32:
   `sum_loop`, registers, disassembly and the task list are all readable
 - Cloned into a clean directory and set up from scratch, to confirm nothing
   machine-specific is committed
+
+Re-verified on hardware after the restructure: flashed from
+`components/esp32c3_riscv_asm/examples/hello_asm`, self-check **PASS**,
+322 / 16 cycles, same as before the move.
+
+The registry upload was validated with `compote component upload --dry-run`,
+which the registry answered with "Uploaded archive is valid". Nothing has
+been published.
 
 **Not verified:** `setup.ps1` and `setup.bat`. The development machine runs
 Linux and has no PowerShell to test them. Their logic mirrors `setup.sh`
