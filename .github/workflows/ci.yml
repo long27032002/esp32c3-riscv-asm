@@ -243,10 +243,17 @@ jobs:
         run: |
           . "${IDF_PATH}/export.sh" >/dev/null
           cd components/esp32c3_riscv_asm
-          compote component pack --name esp32c3_riscv_asm \
-                                 --version "$(python3 -c "
+          # export.sh first: PyYAML lives in the ESP-IDF python environment,
+          # not in the container's system python.
+          version="$(python3 -c "
           import yaml; print(yaml.safe_load(open('idf_component.yml'))['version'])")"
+          compote component pack --name esp32c3_riscv_asm --version "${version}"
           ls -la dist/
+
+          # Published once, for the step that follows: it runs in a fresh
+          # shell back at the repository root, and re-parsing the manifest
+          # there would need the ESP-IDF environment all over again.
+          echo "VERSION=${version}" >> "${GITHUB_ENV}"
 
       - name: The archive must carry the sources and nothing generated
         shell: bash
@@ -255,10 +262,7 @@ jobs:
           # examples outside the component, so the name has to be pinned
           # rather than globbed.
           d=components/esp32c3_riscv_asm/dist
-          v="$(python3 -c "
-          import yaml; print(yaml.safe_load(
-              open('components/esp32c3_riscv_asm/idf_component.yml'))['version'])")"
-          archive="${d}/esp32c3_riscv_asm_${v}.tgz"
+          archive="${d}/esp32c3_riscv_asm_${VERSION}.tgz"
           listing="$(tar tzf "${archive}")"
           fail=0
           # README and LICENSE are what the registry page shows. 1.0.0 and
@@ -274,7 +278,7 @@ jobs:
           done
           # The example travels in its own archive; losing it would break
           # "idf.py create-project-from-example".
-          ex="$(tar tzf "${d}/esp32c3_riscv_asm_${v}_examples.tgz")"
+          ex="$(tar tzf "${d}/esp32c3_riscv_asm_${VERSION}_examples.tgz")"
           if grep -q 'hello_asm/main/app_asm.S' <<< "${ex}"; then
             echo "  ok      examples archive carries hello_asm"
           else
