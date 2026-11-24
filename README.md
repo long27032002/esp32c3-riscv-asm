@@ -3,6 +3,7 @@
 **English** · [Tiếng Việt](README.vi.md)
 
 [![CI](https://github.com/long27032002/esp32c3-riscv-asm/actions/workflows/ci.yml/badge.svg)](https://github.com/long27032002/esp32c3-riscv-asm/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-en%20%7C%20vi-blue)](https://long27032002.github.io/esp32c3-riscv-asm/)
 
 RISC-V (RV32IMC) assembly routines for the ESP32-C3, callable from C, together
 with the tooling to build, run, debug and document them.
@@ -469,6 +470,11 @@ PowerShell-style switches: `-Gdb`, `-Project`, `-NoBuild`).
 ---
 
 ## Documentation
+
+The published manuals are at **<https://long27032002.github.io/esp32c3-riscv-asm/>** — English and Vietnamese, rebuilt
+from the sources on every push to `main`.
+
+To build them locally:
 
 ```bash
 ./tools/build-docs.sh        # → docs/html/index.html

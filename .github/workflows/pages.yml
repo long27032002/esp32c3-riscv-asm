@@ -1,0 +1,79 @@
+# Publish the Doxygen documentation to GitHub Pages.
+#
+# The documentation is generated from the sources on every CI run already, but
+# until now it only existed as a build artifact that had to be downloaded and
+# unzipped. This workflow puts the same output on a URL.
+#
+# Nothing here is written by hand: the English and Vietnamese manuals and the
+# language chooser all come out of tools/build-docs.sh, which fails on any
+# Doxygen warning. A page that disagrees with the code therefore cannot be
+# published - the build stops first.
+#
+# Pages must be set to deploy from GitHub Actions:
+#   Settings -> Pages -> Build and deployment -> Source: GitHub Actions
+
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+    # Only when something that affects the documentation changed.
+    paths:
+      - "components/**"
+      - "examples/**"
+      - "README.md"
+      - "README.vi.md"
+      - "Doxyfile"
+      - "Doxyfile.vi"
+      - "tools/build-docs.sh"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. A queued run is dropped rather than cancelled
+# mid-upload, which would leave the site half-written.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build the manuals
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # graphviz is optional for the project, but the published site is the
+      # one place where call graphs are worth having.
+      - run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
+
+      - name: Doxygen, English and Vietnamese
+        run: ./tools/build-docs.sh
+
+      - name: All three entry points must exist
+        run: |
+          for f in docs/html/index.html docs/html/en/index.html \
+                   docs/html/vi/index.html
+          do
+            test -f "$f" && echo "  ok   $f"
+          done
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/html
+
+  deploy:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
