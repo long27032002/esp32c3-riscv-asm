@@ -50,9 +50,19 @@ It exercises the routines, measures how many cycles each costs, and includes
 **ESP32-C3 only.** `GPIO18` and `GPIO19` are USB D-/D+ on boards with native
 USB; driving them drops the connection used for flashing and debugging.
 
+## Calling convention
+
+Standard RISC-V ILP32: arguments in `a0`–`a7`, return value in `a0`, `t0`–`t6`
+and `a0`–`a7` caller-saved, `s0`–`s11` callee-saved, stack 16-byte aligned.
+Each routine's `@clobber` line names the registers it touches.
+
 ## More
 
-Setup scripts, a project generator and the debug configuration live in the
-[GitHub repository](https://github.com/long27032002/esp32c3-riscv-asm).
+The full guide — VS Code debugging with Disassembly, registers, MEMORY and the
+FreeRTOS task list, running on QEMU without a board, setup scripts for Linux
+and Windows, a project generator and a troubleshooting table — is in the
+[GitHub repository](https://github.com/long27032002/esp32c3-riscv-asm#readme),
+in [English](https://github.com/long27032002/esp32c3-riscv-asm/blob/main/README.md)
+and [Tiếng Việt](https://github.com/long27032002/esp32c3-riscv-asm/blob/main/README.vi.md).
 
 MIT, see [LICENSE](LICENSE).
