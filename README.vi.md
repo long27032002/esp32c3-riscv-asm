@@ -146,6 +146,67 @@ toolchain, GDB và OpenOCD. Script nạp `export.sh` trong một shell con rồi
 
 ---
 
+## Phát hành lên ESP Component Registry
+
+Component chưa được phát hành. Mọi thứ đã sẵn sàng, đây là các bước.
+
+### 1. Kiểm tra trước, không cần tài khoản
+
+Dry run gửi gói lên để kiểm tra chứ không phát hành. Registry nhận ẩn danh:
+
+```bash
+cd components/esp32c3_riscv_asm
+compote component pack   --name esp32c3_riscv_asm --version 1.0.0
+compote component upload --name esp32c3_riscv_asm --version 1.0.0 --dry-run
+# NOTICE: Uploaded archive is valid
+```
+
+Hoặc vào tab **Actions**: *Publish to ESP Component Registry* ->
+**Run workflow**, để nguyên ô "dry run".
+
+### 2. Tạo token
+
+Đăng nhập [components.espressif.com](https://components.espressif.com) ->
+**Profile** -> **Tokens** -> tạo token có quyền `write:components`.
+
+Tên tài khoản chính là namespace: component của `alice` sẽ cài bằng
+`alice/esp32c3_riscv_asm`.
+
+### 3. Lưu token vào repo
+
+Repository -> **Settings** -> **Secrets and variables** -> **Actions** ->
+**New repository secret**, đặt tên `IDF_COMPONENT_API_TOKEN`.
+
+### 4. Phát hành
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Workflow sẽ dừng nếu tag và `version` trong `idf_component.yml` lệch nhau.
+**Phiên bản đã phát hành là vĩnh viễn** — registry cho thu hồi (yank) nhưng
+không cho dùng lại số đó, nên mỗi lần phát hành phải tăng version.
+
+Muốn phát hành từ máy mình:
+
+```bash
+export IDF_COMPONENT_API_TOKEN=...
+cd components/esp32c3_riscv_asm
+compote component upload --name esp32c3_riscv_asm --version 1.0.0
+```
+
+### Nếu namespace của bạn khác `long27032002`
+
+Ba chỗ ghi tên namespace, phải sửa cho khớp:
+
+| File | Sửa gì |
+|---|---|
+| `tools/new-project.sh` | biến `NAMESPACE=` ở đầu file |
+| `README.md`, `README.vi.md` | các dòng `idf.py add-dependency` |
+| `components/.../examples/hello_asm/README.md` | dòng `create-project-from-example` |
+
+
 ## CI tự động (GitHub Actions)
 
 Mỗi lần push hoặc mở pull request, GitHub chạy 6 job song song. Xem ở tab
@@ -386,6 +447,13 @@ ESP-IDF v5.3.5, GDB 16.3, OpenOCD v0.12.0-esp32:
 - `doxygen Doxyfile`: **0 cảnh báo**, tài liệu có đủ hàm trong `.S`
 - Debug: OpenOCD lên đúng, **chỉ mở cổng 3333**, GDB dừng đúng `sum_loop`,
   đọc được thanh ghi, disassembly và danh sách task
+
+Đã nạp lại lên board sau khi tái cấu trúc: nạp từ
+`components/esp32c3_riscv_asm/examples/hello_asm`, self-check **PASS**,
+322 / 16 chu kỳ, y như trước khi chuyển.
+
+Việc tải lên registry đã được kiểm bằng `compote component upload --dry-run`,
+registry trả lời "Uploaded archive is valid". Chưa phát hành gì cả.
 
 **Chưa kiểm chứng:** `setup.ps1` và `setup.bat` — máy phát triển chạy Linux,
 không có PowerShell để chạy thử. Logic đối chiếu 1-1 với `setup.sh`, nhưng ai
